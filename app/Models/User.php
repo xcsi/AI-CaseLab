@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -58,5 +59,20 @@ class User extends Authenticatable
     public function hasRole(UserRole $role): bool
     {
         return $this->role?->name === $role->value;
+    }
+
+    public function casesAuthored(): HasMany
+    {
+        return $this->hasMany(CaseModel::class, 'created_by');
+    }
+
+    public function caseAttempts(): HasMany
+    {
+        return $this->hasMany(CaseAttempt::class);
+    }
+
+    public function activityLogEntries(): HasMany
+    {
+        return $this->hasMany(ActivityLog::class, 'causer_id');
     }
 }
