@@ -2,7 +2,7 @@
 
 **An Interactive Software Engineering Training Platform** — a virtual engineering office where students investigate realistic production incidents (login failures, API 500s, database performance issues, payment failures) using support tickets, logs, code, and data, instead of reading theory.
 
-> **Status:** Design phase complete. Implementation in progress — Phases 1–2 done, see [Roadmap](#roadmap) below.
+> **Status:** Design phase complete. Implementation in progress — Phases 1–3 done, see [Roadmap](#roadmap) below.
 
 ## Why This Exists
 
@@ -50,7 +50,7 @@ All design and process documentation lives in [`docs/`](docs) and is the source 
 |---|---|---|
 | 1 | Laravel Project Setup | Done |
 | 2 | Authentication & Roles | Done |
-| 3 | Database Schema & Models | Not started |
+| 3 | Database Schema & Models | Done |
 | 4 | Admin CMS | Not started |
 | 5 | Student Engineering Office | Not started |
 | 6 | Incident Investigation Workspace | Not started |

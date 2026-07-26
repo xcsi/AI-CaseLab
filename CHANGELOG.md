@@ -39,6 +39,23 @@ the first release is tagged.
   `UserRegistrationService` (always assigns the student role) instead of
   inline controller validation. Feature tests cover guest/student/
   instructor/admin access to `/admin` and the registration role default.
+- **Phase 3 — Database Schema & Models:** all 15 domain tables from the
+  reviewed design (`categories`, `evidence_types`, `cases`,
+  `evidence_items`, `hints`, `rubric_criteria`, `case_attempts`,
+  `investigation_notes`, `diagnoses`, `diagnosis_evidence_citations`,
+  `evidence_views`, `hint_unlocks`, `evaluations`,
+  `evaluation_criterion_results`, `activity_log`); five PHP backed enums
+  (`CaseDifficulty`, `CaseStatus`, `AttemptStatus`, `ConfidenceLevel`,
+  `MatchingType`); Eloquent models with full relationships (including the
+  `diagnoses` ↔ `evidence_items` citation pivot); `EvidenceTypeSeeder` +
+  `CategorySeeder` for reference data; Repository interfaces + Eloquent
+  implementations for the six domain aggregates (`Case`, `EvidenceItem`,
+  `CaseAttempt`, `Diagnosis`, `Evaluation`, `Hint`), bound via
+  `RepositoryServiceProvider`. A `DomainGraphWiringTest` builds one full
+  case graph (case → evidence → hint → rubric → attempt → diagnosis →
+  evaluation) through the repositories and asserts every relationship
+  resolves both directions, per the roadmap's Phase 3 acceptance
+  criteria.
 
 ### Changed
 
