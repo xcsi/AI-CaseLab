@@ -70,7 +70,9 @@ erDiagram
         bigint created_by FK
         string title
         string slug
+        text summary
         text ticket_content
+        text learning_outcomes
         string difficulty
         int estimated_minutes
         string status
@@ -223,12 +225,14 @@ erDiagram
 | created_by | bigint FK → users.id | admin author; restrict on delete |
 | title | string | |
 | slug | string, unique | |
+| summary | text, nullable | short admin-authored teaser — catalog card one-liner (per the UI/UX doc) and the Case Editor's Basic Information section |
 | ticket_content | text | the initial support ticket shown to the student |
+| learning_outcomes | text, nullable | admin-facing for now; what a student should learn from this case — not yet surfaced in any student-facing UI |
 | difficulty | string | app-level enum `App\Enums\CaseDifficulty` (`easy`,`medium`,`hard`) |
 | estimated_minutes | int | |
 | status | string | app-level enum `App\Enums\CaseStatus` (`draft`,`published`,`archived`), default `draft` |
 | version | int | default `1`; incremented each time a published case is edited again (Decision 4) |
-| model_solution_summary | text, nullable | shown after completion if `allow_reattempt` policy permits |
+| model_solution_summary | text, nullable | the "Expected Diagnosis" shown in the Case Editor; revealed to students after completion if `allow_reattempt` policy permits |
 | max_score | decimal(5,2) | sum of rubric weights, denormalized for quick display |
 | allow_reattempt | boolean | default true |
 | deleted_at | timestamp, nullable | **soft delete** — cases are archived, never hard-deleted, to preserve historical attempts |
@@ -238,7 +242,7 @@ erDiagram
 | Column | Type | Notes |
 |---|---|---|
 | id | bigint PK | |
-| code | string, unique | `support_ticket` (rare, usually inline), `log`, `code_snippet`, `db_snapshot`, `api_response`, `screenshot` |
+| code | string, unique | `support_ticket` (rare, usually inline), `log`, `code_snippet`, `db_snapshot`, `api_response`, `screenshot`, `configuration`, `deployment_history` |
 | label | string | display name |
 
 *Seeded once; adding a new evidence type in the future = one new row + one new frontend renderer, no migration.*
