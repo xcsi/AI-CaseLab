@@ -29,6 +29,16 @@ the first release is tagged.
 - Development environment switched from SQLite to MySQL (`ai_caselab`
   database) once the local server conflict was resolved (see Known
   issues below) — connection verified, migrations run clean.
+- **Phase 2 — Authentication & Roles:** `roles` table (`student`,
+  `instructor`, `admin`) and `users.role_id` foreign key; `UserRole`
+  backed enum as the single source of truth for role names;
+  `EnsureUserHasRole` middleware registered as the `role` alias, gating
+  `/admin/*` to the admin role; `RoleSeeder` + `AdminUserSeeder` (local
+  admin account, skipped outside non-production environments);
+  registration refactored onto a `RegisterUserRequest` Form Request and
+  `UserRegistrationService` (always assigns the student role) instead of
+  inline controller validation. Feature tests cover guest/student/
+  instructor/admin access to `/admin` and the registration role default.
 
 ### Known issues
 
