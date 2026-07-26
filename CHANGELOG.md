@@ -40,6 +40,21 @@ the first release is tagged.
   inline controller validation. Feature tests cover guest/student/
   instructor/admin access to `/admin` and the registration role default.
 
+### Changed
+
+- **Phase 3 architecture review** (pre-migration): `docs/03-database-design.md`
+  revised before any Phase 3 migration was written — enum-like columns
+  switched from native SQL `ENUM` to `string` + PHP backed enums;
+  `diagnoses.cited_evidence_ids` (JSON) normalized into a
+  `diagnosis_evidence_citations` pivot table for analytics performance;
+  added `evaluations.metadata` / `evaluation_criterion_results.metadata`
+  (nullable JSON) as the future-AI-strategy extensibility seam; added
+  `hint_unlocks.penalty_applied` to snapshot the penalty at unlock time;
+  added `cases.version` / `case_attempts.case_version` for lightweight
+  case-versioning; added a new `activity_log` table for admin/system
+  audit trail. `docs/04-architecture.md` updated to list `ActivityLog`
+  and `ActivityLogService`.
+
 ### Known issues
 
 - Composer's advisory-block policy rejects every Laravel 11.31–11.55
