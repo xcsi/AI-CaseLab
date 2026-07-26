@@ -26,6 +26,9 @@ the first release is tagged.
   (`layouts/admin.blade.php` + sidebar) built per the approved UI/UX
   design, with placeholder routes for not-yet-built pages (case catalog,
   progress, admin dashboard/cases/categories/users/analytics).
+- Development environment switched from SQLite to MySQL (`ai_caselab`
+  database) once the local server conflict was resolved (see Known
+  issues below) — connection verified, migrations run clean.
 
 ### Known issues
 
@@ -34,6 +37,9 @@ the first release is tagged.
   Laravel 12.60+/13.10+); overridden via `config.policy.advisories.block`
   in `composer.json` to allow installation. Tracked as an open decision —
   see the Phase 1 completion notes.
-- `DB_CONNECTION` is `sqlite` for local verification; the approved MySQL
-  connection could not be verified because the local XAMPP MySQL root
-  account rejected the default empty-password login.
+- This dev machine has two MySQL-compatible servers: a standalone
+  MySQL 8.0 Windows service on port 3306 (credentials unknown, not
+  used), and XAMPP's own MariaDB 10.4 instance reconfigured to port
+  3307 (root, empty password — used for local development). `.env` is
+  gitignored and machine-specific; `.env.example` documents the generic
+  `mysql`/port-3306 defaults for other contributors' setups.
