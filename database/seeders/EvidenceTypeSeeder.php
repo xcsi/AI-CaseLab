@@ -19,6 +19,8 @@ class EvidenceTypeSeeder extends Seeder
             ['code' => 'db_snapshot', 'label' => 'Database Snapshot'],
             ['code' => 'api_response', 'label' => 'API Response'],
             ['code' => 'screenshot', 'label' => 'Screenshot'],
+            ['code' => 'configuration', 'label' => 'Configuration'],
+            ['code' => 'deployment_history', 'label' => 'Deployment History'],
         ];
 
         foreach ($types as $type) {
