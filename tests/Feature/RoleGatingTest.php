@@ -27,13 +27,17 @@ class RoleGatingTest extends TestCase
         $response->assertForbidden();
     }
 
-    public function test_instructor_is_forbidden_from_admin_area(): void
+    public function test_instructor_can_reach_the_admin_area_read_only(): void
     {
+        // Per the SRS's admin/instructor split (Phase 4): instructors get
+        // read access to the admin shell, but Policies restrict them from
+        // content-management actions (covered by feature-specific tests,
+        // e.g. Admin\CategoryManagementTest).
         $instructor = User::factory()->withRole(UserRole::Instructor)->create();
 
         $response = $this->actingAs($instructor)->get('/admin');
 
-        $response->assertForbidden();
+        $response->assertOk();
     }
 
     public function test_admin_can_reach_admin_area(): void

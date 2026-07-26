@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -28,11 +29,10 @@ Route::get('/progress', function () {
     return view('placeholder', ['title' => 'My Progress']);
 })->middleware(['auth'])->name('progress.index');
 
-// Placeholder routes for the admin shell — implemented in Phase 4 onward.
-// Gated to the admin role only for now; instructor read-only access (per
-// the architecture doc) will be split out once there's real content to
-// distinguish read-only from full access.
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+// Admin shell — gated to admin and instructor (read-only for instructors,
+// per the SRS's content-management split); Policies enforce the finer-grained
+// write restrictions per resource.
+Route::middleware(['auth', 'role:admin,instructor'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', function () {
         return view('placeholder', ['title' => 'Admin Dashboard', 'layout' => 'admin']);
     })->name('dashboard');
@@ -41,9 +41,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         return view('placeholder', ['title' => 'Cases', 'layout' => 'admin']);
     })->name('cases.index');
 
-    Route::get('/categories', function () {
-        return view('placeholder', ['title' => 'Categories', 'layout' => 'admin']);
-    })->name('categories.index');
+    Route::resource('categories', CategoryController::class)->except(['create', 'show', 'edit']);
 
     Route::get('/users', function () {
         return view('placeholder', ['title' => 'Users', 'layout' => 'admin']);
