@@ -29,9 +29,10 @@ Route::get('/progress', function () {
 })->middleware(['auth'])->name('progress.index');
 
 // Placeholder routes for the admin shell — implemented in Phase 4 onward.
-// Not yet role-gated (roles arrive in Phase 2); just needs to render so the
-// admin navigation partial has real routes to link to.
-Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
+// Gated to the admin role only for now; instructor read-only access (per
+// the architecture doc) will be split out once there's real content to
+// distinguish read-only from full access.
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', function () {
         return view('placeholder', ['title' => 'Admin Dashboard', 'layout' => 'admin']);
     })->name('dashboard');
