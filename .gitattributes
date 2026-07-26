@@ -1,0 +1,16 @@
+* text=auto eol=lf
+
+*.blade.php diff=html linguist-language=PHP
+*.css linguist-vendored
+*.scss linguist-vendored
+*.js linguist-vendored
+/public/build/** linguist-generated
+
+/.github export-ignore
+/docs export-ignore
+/tests export-ignore
+.editorconfig export-ignore
+.gitattributes export-ignore
+.gitignore export-ignore
+CHANGELOG.md export-ignore
+CONTRIBUTING.md export-ignore

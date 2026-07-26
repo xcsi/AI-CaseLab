@@ -1,0 +1,61 @@
+# AI CaseLab — Laravel .gitignore
+
+# Dependencies
+/vendor
+/node_modules
+
+# Build output
+/public/build
+/public/hot
+/public/storage
+/bootstrap/ssr
+
+# Environment & secrets
+.env
+.env.backup
+.env.production
+.env.*.local
+auth.json
+
+# Laravel runtime/cache
+/storage/*.key
+/storage/app/*
+!/storage/app/public
+!/storage/app/.gitkeep
+/storage/framework/cache/*
+!/storage/framework/cache/.gitkeep
+/storage/framework/sessions/*
+!/storage/framework/sessions/.gitkeep
+/storage/framework/testing/*
+!/storage/framework/testing/.gitkeep
+/storage/framework/views/*
+!/storage/framework/views/.gitkeep
+/storage/logs/*
+!/storage/logs/.gitkeep
+/.phpunit.cache
+/.phpunit.result.cache
+
+# IDE / editor
+/.idea
+/.vscode
+/.fleet
+/.nova
+/.zed
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local dev tooling config (machine/session-specific, not shared project source)
+/.claude
+
+# Homestead / Sail
+Homestead.json
+Homestead.yaml
+docker-compose.override.yml
+
+# Misc logs
+npm-debug.log
+yarn-error.log
