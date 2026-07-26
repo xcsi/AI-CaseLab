@@ -102,6 +102,7 @@ app/
     HintUnlock.php
     Evaluation.php
     EvaluationCriterionResult.php
+    ActivityLog.php               (audit trail — see Database Design Decision 6)
   Policies/
     CasePolicy.php
     CaseAttemptPolicy.php
@@ -130,6 +131,7 @@ app/
     DiagnosisService.php            (submit + orchestrate evaluation)
     EvaluationService.php           (resolve strategies, persist results)
     AnalyticsService.php            (instructor/admin aggregates)
+    ActivityLogService.php          (records activity_log entries; called from admin Services on create/update/publish/archive)
   Evaluation/
     Contracts/
       EvaluationStrategyInterface.php
