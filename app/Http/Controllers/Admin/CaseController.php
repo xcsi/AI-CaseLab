@@ -12,6 +12,7 @@ use App\Models\CaseModel;
 use App\Models\Category;
 use App\Services\CaseCatalogService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class CaseController extends Controller
@@ -63,25 +64,25 @@ class CaseController extends Controller
 
     public function update(UpdateCaseRequest $request, CaseModel $case): RedirectResponse
     {
-        $this->caseCatalog->update($case, $request->validated());
+        $this->caseCatalog->update($case, $request->validated(), $request->user());
 
         return redirect()->route('admin.cases.edit', $case)->with('status', 'Case updated.');
     }
 
-    public function destroy(CaseModel $case): RedirectResponse
+    public function destroy(Request $request, CaseModel $case): RedirectResponse
     {
         $this->authorize('delete', $case);
 
-        $case->delete();
+        $this->caseCatalog->archive($case, $request->user());
 
         return redirect()->route('admin.cases.index')->with('status', 'Case archived.');
     }
 
-    public function publish(CaseModel $case): RedirectResponse
+    public function publish(Request $request, CaseModel $case): RedirectResponse
     {
         $this->authorize('update', $case);
 
-        $errors = $this->caseCatalog->publish($case);
+        $errors = $this->caseCatalog->publish($case, $request->user());
 
         if ($errors !== []) {
             return back()->withErrors(['publish' => $errors]);

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\CaseController as AdminCaseController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\HintController;
 use App\Http\Controllers\Admin\RubricCriterionController;
 use App\Http\Controllers\ProfileController;
@@ -36,9 +37,7 @@ Route::get('/progress', function () {
 // per the SRS's content-management split); Policies enforce the finer-grained
 // write restrictions per resource.
 Route::middleware(['auth', 'role:admin,instructor'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/', function () {
-        return view('placeholder', ['title' => 'Admin Dashboard', 'layout' => 'admin']);
-    })->name('dashboard');
+    Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
 
     Route::resource('cases', AdminCaseController::class)->except(['show']);
     Route::post('cases/{case}/publish', [AdminCaseController::class, 'publish'])->name('cases.publish');

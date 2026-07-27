@@ -21,7 +21,7 @@ class CategoryFactory extends Factory
 
         return [
             'name' => ucwords($name),
-            'slug' => str($name)->slug(),
+            'slug' => (string) str($name)->slug(),
             'description' => fake()->sentence(),
         ];
     }
