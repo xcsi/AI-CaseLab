@@ -41,6 +41,7 @@ Route::middleware(['auth', 'role:admin,instructor'])->prefix('admin')->name('adm
     })->name('dashboard');
 
     Route::resource('cases', AdminCaseController::class)->except(['show']);
+    Route::post('cases/{case}/publish', [AdminCaseController::class, 'publish'])->name('cases.publish');
 
     Route::resource('cases.hints', HintController::class)->shallow()->only(['store', 'update', 'destroy']);
     Route::post('hints/{hint}/move-up', [HintController::class, 'moveUp'])->name('hints.move-up');

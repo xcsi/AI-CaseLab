@@ -15,8 +15,14 @@
         <form method="POST" action="{{ route('admin.cases.update', $case) }}" id="case-form">
             @csrf
             @method('PUT')
-            @include('admin.cases._form', ['case' => $case, 'categories' => $categories, 'difficulties' => $difficulties, 'readOnly' => $readOnly])
+            @include('admin.cases._form', ['case' => $case, 'categories' => $categories, 'difficulties' => $difficulties, 'readOnly' => $readOnly, 'publishErrors' => $publishErrors])
         </form>
+
+        @if ($case->status === App\Enums\CaseStatus::Draft)
+            <form method="POST" action="{{ route('admin.cases.publish', $case) }}" id="publish-form">
+                @csrf
+            </form>
+        @endif
 
         @include('admin.cases._hints', ['case' => $case, 'readOnly' => $readOnly])
 
