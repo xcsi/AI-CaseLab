@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\CaseDifficulty;
 use App\Enums\CaseStatus;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -84,6 +85,15 @@ class CaseModel extends Model
     public function attempts(): HasMany
     {
         return $this->hasMany(CaseAttempt::class, 'case_id');
+    }
+
+    /**
+     * @param  Builder<CaseModel>  $query
+     * @return Builder<CaseModel>
+     */
+    public function scopePublished(Builder $query): Builder
+    {
+        return $query->where('status', CaseStatus::Published);
     }
 
     /**
