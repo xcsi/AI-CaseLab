@@ -17,6 +17,8 @@
             @method('PUT')
             @include('admin.cases._form', ['case' => $case, 'categories' => $categories, 'difficulties' => $difficulties, 'readOnly' => $readOnly])
         </form>
+
+        @include('admin.cases._hints', ['case' => $case, 'readOnly' => $readOnly])
     </div>
 
     @unless ($readOnly)
