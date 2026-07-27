@@ -6,15 +6,19 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\HintController;
 use App\Http\Controllers\Admin\RubricCriterionController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+// The Inbox — kept at /dashboard per the approved UX spec's decision log
+// (avoids overriding Breeze's password-reset/verification redirect
+// convention for a cosmetic URL change); the on-page heading reads "Inbox".
+Route::get('/dashboard', [StudentDashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
