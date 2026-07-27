@@ -11,6 +11,7 @@ class CaseCatalogService
 {
     public function __construct(
         private readonly CaseRepositoryInterface $cases,
+        private readonly ActivityLogService $activityLog,
     ) {}
 
     /**
@@ -20,7 +21,11 @@ class CaseCatalogService
     {
         $data['created_by'] = $author->id;
 
-        return $this->cases->create($data);
+        $case = $this->cases->create($data);
+
+        $this->activityLog->record('created', $case, $author, ['title' => $case->title]);
+
+        return $case;
     }
 
     /**
@@ -30,13 +35,17 @@ class CaseCatalogService
      *
      * @param  array<string, mixed>  $data
      */
-    public function update(CaseModel $case, array $data): CaseModel
+    public function update(CaseModel $case, array $data, ?User $causer = null): CaseModel
     {
         if ($case->status === CaseStatus::Published) {
             $data['version'] = $case->version + 1;
         }
 
-        return $this->cases->update($case, $data);
+        $case = $this->cases->update($case, $data);
+
+        $this->activityLog->record('updated', $case, $causer, ['title' => $case->title]);
+
+        return $case;
     }
 
     /**
@@ -45,7 +54,7 @@ class CaseCatalogService
      *
      * @return array<int, string> Invariant failure messages — empty means published.
      */
-    public function publish(CaseModel $case): array
+    public function publish(CaseModel $case, ?User $causer = null): array
     {
         $errors = $this->publishInvariantErrors($case);
 
@@ -55,7 +64,16 @@ class CaseCatalogService
 
         $this->cases->update($case, ['status' => CaseStatus::Published]);
 
+        $this->activityLog->record('published', $case, $causer, ['title' => $case->title]);
+
         return [];
+    }
+
+    public function archive(CaseModel $case, ?User $causer = null): void
+    {
+        $this->cases->delete($case);
+
+        $this->activityLog->record('archived', $case, $causer, ['title' => $case->title]);
     }
 
     /**
