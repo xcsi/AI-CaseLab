@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\CaseDifficulty;
+use App\Enums\MatchingType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreCaseRequest;
 use App\Http\Requests\Admin\UpdateCaseRequest;
@@ -52,6 +53,7 @@ class CaseController extends Controller
             'case' => $case,
             'categories' => Category::orderBy('name')->get(),
             'difficulties' => CaseDifficulty::cases(),
+            'matchingTypes' => MatchingType::cases(),
         ]);
     }
 

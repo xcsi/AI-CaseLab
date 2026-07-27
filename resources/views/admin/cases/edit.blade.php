@@ -19,6 +19,8 @@
         </form>
 
         @include('admin.cases._hints', ['case' => $case, 'readOnly' => $readOnly])
+
+        @include('admin.cases._rubric', ['case' => $case, 'readOnly' => $readOnly, 'matchingTypes' => $matchingTypes])
     </div>
 
     @unless ($readOnly)

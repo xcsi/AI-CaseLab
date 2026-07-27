@@ -85,4 +85,27 @@ class CaseModel extends Model
     {
         return $this->hasMany(CaseAttempt::class, 'case_id');
     }
+
+    /**
+     * Published cases bump `version` whenever their content changes — the
+     * case's own fields (CaseCatalogService::update) and its hints/rubric
+     * criteria alike — so `case_attempts.case_version` can flag drift
+     * (Database Design Decision 4). Drafts churn freely with no version cost.
+     */
+    public function touchVersionIfPublished(): void
+    {
+        if ($this->status === CaseStatus::Published) {
+            $this->increment('version');
+        }
+    }
+
+    /**
+     * `max_score` is a denormalized sum of the case's rubric criteria
+     * weights, kept in sync on every rubric change rather than computed
+     * on read (Database Design: cases.max_score).
+     */
+    public function recalculateMaxScore(): void
+    {
+        $this->update(['max_score' => $this->rubricCriteria()->sum('weight')]);
+    }
 }
