@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\CaseController as AdminCaseController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\HintController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -39,6 +40,10 @@ Route::middleware(['auth', 'role:admin,instructor'])->prefix('admin')->name('adm
     })->name('dashboard');
 
     Route::resource('cases', AdminCaseController::class)->except(['show']);
+
+    Route::resource('cases.hints', HintController::class)->shallow()->only(['store', 'update', 'destroy']);
+    Route::post('hints/{hint}/move-up', [HintController::class, 'moveUp'])->name('hints.move-up');
+    Route::post('hints/{hint}/move-down', [HintController::class, 'moveDown'])->name('hints.move-down');
 
     Route::resource('categories', CategoryController::class)->except(['create', 'show', 'edit']);
 
