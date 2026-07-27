@@ -6,7 +6,9 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\HintController;
 use App\Http\Controllers\Admin\RubricCriterionController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Student\CaseCatalogController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
+use App\Models\CaseModel;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -26,16 +28,17 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// Placeholder routes for the student shell — implemented in later phases
-// (Phase 5 catalog, Phase 11 progress/analytics). Kept as real named routes
-// so the navigation partial can call route() without erroring. Route *names*
-// stay technical (cases.index, progress.index — matching the eventual
-// CaseCatalogController/CaseAttempt-history controllers); only the URI and
-// on-page title adopt the workplace terms, per the two-layer naming rule in
-// docs/09-workplace-terminology.md.
-Route::get('/incidents', function () {
-    return view('placeholder', ['title' => 'Assigned Incidents']);
-})->name('cases.index');
+// Assigned Incidents — guest-accessible (the Shell's "View a Sample
+// Incident" guest link points here), matching the catalog's role as a
+// public-ish backlog before a student commits to an incident.
+Route::get('/incidents', [CaseCatalogController::class, 'index'])->name('cases.index');
+
+// Incident Briefing doesn't exist yet (a later screen) — kept as a real
+// placeholder route, same scaffolding pattern as /work-history below, so
+// the catalog's card links have somewhere real to go instead of a 404.
+Route::get('/incidents/{case:slug}', function (CaseModel $case) {
+    return view('placeholder', ['title' => 'Incident Briefing']);
+})->name('cases.show');
 
 Route::get('/work-history', function () {
     return view('placeholder', ['title' => 'Work History']);
