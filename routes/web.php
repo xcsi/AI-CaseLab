@@ -24,13 +24,17 @@ Route::middleware('auth')->group(function () {
 
 // Placeholder routes for the student shell — implemented in later phases
 // (Phase 5 catalog, Phase 11 progress/analytics). Kept as real named routes
-// so the navigation partial can call route() without erroring.
-Route::get('/cases', function () {
-    return view('placeholder', ['title' => 'Case Catalog']);
+// so the navigation partial can call route() without erroring. Route *names*
+// stay technical (cases.index, progress.index — matching the eventual
+// CaseCatalogController/CaseAttempt-history controllers); only the URI and
+// on-page title adopt the workplace terms, per the two-layer naming rule in
+// docs/09-workplace-terminology.md.
+Route::get('/incidents', function () {
+    return view('placeholder', ['title' => 'Assigned Incidents']);
 })->name('cases.index');
 
-Route::get('/progress', function () {
-    return view('placeholder', ['title' => 'My Progress']);
+Route::get('/work-history', function () {
+    return view('placeholder', ['title' => 'Work History']);
 })->middleware(['auth'])->name('progress.index');
 
 // Admin shell — gated to admin and instructor (read-only for instructors,

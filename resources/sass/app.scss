@@ -1,2 +1,9 @@
 @import "variables";
 @import "bootstrap/scss/bootstrap";
+
+// Engineering Office shell: active nav item reads as underlined + bold,
+// not a filled pill — keeps the primary nav calm (docs/09 UX spec, Shell).
+.navbar-nav .nav-link.active {
+    font-weight: 600;
+    border-bottom: 2px solid $primary;
+}
