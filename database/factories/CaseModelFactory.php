@@ -27,7 +27,7 @@ class CaseModelFactory extends Factory
             'category_id' => Category::factory(),
             'created_by' => User::factory(),
             'title' => $title,
-            'slug' => str($title)->slug(),
+            'slug' => (string) str($title)->slug(),
             'summary' => fake()->sentence(),
             'ticket_content' => fake()->paragraphs(3, true),
             'learning_outcomes' => fake()->sentence(),

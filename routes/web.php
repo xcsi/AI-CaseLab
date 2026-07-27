@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\CaseController as AdminCaseController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -37,9 +38,7 @@ Route::middleware(['auth', 'role:admin,instructor'])->prefix('admin')->name('adm
         return view('placeholder', ['title' => 'Admin Dashboard', 'layout' => 'admin']);
     })->name('dashboard');
 
-    Route::get('/cases', function () {
-        return view('placeholder', ['title' => 'Cases', 'layout' => 'admin']);
-    })->name('cases.index');
+    Route::resource('cases', AdminCaseController::class)->except(['show']);
 
     Route::resource('categories', CategoryController::class)->except(['create', 'show', 'edit']);
 
