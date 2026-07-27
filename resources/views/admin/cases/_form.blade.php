@@ -1,6 +1,7 @@
 @php
     $case ??= null;
     $readOnly ??= false;
+    $publishErrors ??= [];
 @endphp
 
 <div class="row g-4">
@@ -109,6 +110,27 @@
                 @endif
             </div>
         </div>
+
+        @if ($case && ! $readOnly && $case->status === App\Enums\CaseStatus::Draft)
+            <div class="card shadow-sm mb-4">
+                <div class="card-header fw-semibold">Publish</div>
+                <div class="card-body">
+                    @if ($publishErrors)
+                        <ul class="text-danger small mb-3 ps-3">
+                            @foreach ($publishErrors as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    @else
+                        <p class="text-secondary small mb-3">This case is ready to publish.</p>
+                    @endif
+                    {{-- Submits the standalone #publish-form below via the HTML5 `form`
+                         attribute, since this card renders inside #case-form and HTML
+                         doesn't allow nested <form> elements. --}}
+                    <button type="submit" form="publish-form" class="btn btn-success" @disabled($publishErrors)>Publish</button>
+                </div>
+            </div>
+        @endif
 
         @unless ($readOnly)
             <x-primary-button>{{ $case ? 'Save Changes' : 'Create Case' }}</x-primary-button>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\CaseDifficulty;
+use App\Enums\CaseStatus;
 use App\Enums\MatchingType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreCaseRequest;
@@ -54,6 +55,9 @@ class CaseController extends Controller
             'categories' => Category::orderBy('name')->get(),
             'difficulties' => CaseDifficulty::cases(),
             'matchingTypes' => MatchingType::cases(),
+            'publishErrors' => $case->status === CaseStatus::Draft
+                ? $this->caseCatalog->publishInvariantErrors($case)
+                : [],
         ]);
     }
 
@@ -71,5 +75,18 @@ class CaseController extends Controller
         $case->delete();
 
         return redirect()->route('admin.cases.index')->with('status', 'Case archived.');
+    }
+
+    public function publish(CaseModel $case): RedirectResponse
+    {
+        $this->authorize('update', $case);
+
+        $errors = $this->caseCatalog->publish($case);
+
+        if ($errors !== []) {
+            return back()->withErrors(['publish' => $errors]);
+        }
+
+        return redirect()->route('admin.cases.edit', $case)->with('status', 'Case published.');
     }
 }
