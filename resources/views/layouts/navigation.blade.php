@@ -14,23 +14,23 @@
                 @auth
                     <li class="nav-item">
                         <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                            {{ __('Dashboard') }}
+                            {{ __('Inbox') }}
                         </x-nav-link>
                     </li>
                     <li class="nav-item">
                         <x-nav-link :href="route('cases.index')" :active="request()->routeIs('cases.*')">
-                            {{ __('Case Catalog') }}
+                            {{ __('Assigned Incidents') }}
                         </x-nav-link>
                     </li>
                     <li class="nav-item">
                         <x-nav-link :href="route('progress.index')" :active="request()->routeIs('progress.*')">
-                            {{ __('My Progress') }}
+                            {{ __('Work History') }}
                         </x-nav-link>
                     </li>
                 @else
                     <li class="nav-item">
                         <x-nav-link href="{{ route('cases.index') }}" :active="request()->routeIs('cases.*')">
-                            {{ __('View Demo Case') }}
+                            {{ __('View a Sample Incident') }}
                         </x-nav-link>
                     </li>
                 @endauth
