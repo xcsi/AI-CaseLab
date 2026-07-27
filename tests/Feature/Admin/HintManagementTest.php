@@ -167,4 +167,38 @@ class HintManagementTest extends TestCase
 
         $response->assertForbidden();
     }
+
+    public function test_adding_a_hint_to_a_published_case_bumps_its_version(): void
+    {
+        $case = CaseModel::factory()->published()->create(['version' => 1]);
+
+        $this->actingAs($this->admin())->post("/admin/cases/{$case->id}/hints", [
+            'content' => 'A new hint.',
+            'score_penalty' => 1,
+        ]);
+
+        $this->assertSame(2, $case->fresh()->version);
+    }
+
+    public function test_adding_a_hint_to_a_draft_case_does_not_bump_its_version(): void
+    {
+        $case = CaseModel::factory()->create(['version' => 1]);
+
+        $this->actingAs($this->admin())->post("/admin/cases/{$case->id}/hints", [
+            'content' => 'A new hint.',
+            'score_penalty' => 1,
+        ]);
+
+        $this->assertSame(1, $case->fresh()->version);
+    }
+
+    public function test_deleting_a_hint_from_a_published_case_bumps_its_version(): void
+    {
+        $case = CaseModel::factory()->published()->create(['version' => 1]);
+        $hint = Hint::factory()->create(['case_id' => $case->id]);
+
+        $this->actingAs($this->admin())->delete("/admin/hints/{$hint->id}");
+
+        $this->assertSame(2, $case->fresh()->version);
+    }
 }

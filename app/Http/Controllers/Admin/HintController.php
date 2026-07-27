@@ -19,6 +19,7 @@ class HintController extends Controller
     public function store(StoreHintRequest $request, CaseModel $case): RedirectResponse
     {
         $this->hints->create($case, $request->validated());
+        $case->touchVersionIfPublished();
 
         return back()->with('status', 'Hint added.');
     }
@@ -26,6 +27,7 @@ class HintController extends Controller
     public function update(UpdateHintRequest $request, Hint $hint): RedirectResponse
     {
         $this->hints->update($hint, $request->validated());
+        $hint->case->touchVersionIfPublished();
 
         return back()->with('status', 'Hint updated.');
     }
@@ -34,7 +36,9 @@ class HintController extends Controller
     {
         $this->authorize('update', $hint->case);
 
+        $case = $hint->case;
         $this->hints->delete($hint);
+        $case->touchVersionIfPublished();
 
         return back()->with('status', 'Hint removed.');
     }
@@ -44,6 +48,7 @@ class HintController extends Controller
         $this->authorize('update', $hint->case);
 
         $this->hints->moveUp($hint);
+        $hint->case->touchVersionIfPublished();
 
         return back();
     }
@@ -53,6 +58,7 @@ class HintController extends Controller
         $this->authorize('update', $hint->case);
 
         $this->hints->moveDown($hint);
+        $hint->case->touchVersionIfPublished();
 
         return back();
     }

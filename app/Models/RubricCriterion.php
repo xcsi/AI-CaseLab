@@ -26,6 +26,7 @@ class RubricCriterion extends Model
         return [
             'matching_type' => MatchingType::class,
             'expected_data' => 'array',
+            'weight' => 'decimal:2',
         ];
     }
 
