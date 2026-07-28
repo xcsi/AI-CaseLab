@@ -48,15 +48,20 @@ Route::post('/incidents/{case:slug}/start', [CaseAttemptController::class, 'stor
     ->middleware('auth')
     ->name('attempts.store');
 
-// Investigation Workspace and Performance Review are later screens — kept
-// as real placeholder routes (same scaffolding pattern used throughout
-// this phase) so the Briefing's CTA and "View Past Report" link have
-// somewhere real to go instead of a 404. EnsureAttemptBelongsToUser is
-// wired in now so it protects real content from day one once these
-// screens are built, rather than being retrofitted later.
-Route::get('/investigation/{attempt}', function (CaseAttempt $attempt) {
-    return view('placeholder', ['title' => 'Investigation Workspace']);
-})->middleware(['auth', 'attempt.owner'])->name('investigation.show');
+// Investigation Workspace — Milestone 1 (shell/layout only, see
+// CaseAttemptController::show()). EnsureAttemptBelongsToUser protects
+// every attempt-scoped route regardless of how much of the workspace is
+// built yet.
+Route::get('/investigation/{attempt}', [CaseAttemptController::class, 'show'])
+    ->middleware(['auth', 'attempt.owner'])
+    ->name('investigation.show');
+
+// Performance Review is a later screen — kept as a real placeholder route
+// (same scaffolding pattern used throughout this phase) so the Briefing's
+// "View Past Report" link has somewhere real to go instead of a 404.
+Route::get('/performance-review/{attempt}', function (CaseAttempt $attempt) {
+    return view('placeholder', ['title' => 'Performance Review']);
+})->middleware(['auth', 'attempt.owner'])->name('performance-review.show');
 
 Route::get('/performance-review/{attempt}', function (CaseAttempt $attempt) {
     return view('placeholder', ['title' => 'Performance Review']);
