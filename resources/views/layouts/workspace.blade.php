@@ -33,8 +33,8 @@
                     <span class="text-secondary small font-monospace" title="Elapsed time — coming in a later milestone">
                         ⏱ --:--:--
                     </span>
-                    <span class="text-secondary small text-nowrap" title="Evidence viewed — coming in a later milestone">
-                        0/0 viewed
+                    <span class="text-secondary small text-nowrap" id="workspace-progress" data-viewed="{{ $evidenceViewedCount }}" data-total="{{ $evidenceTotalCount }}">
+                        {{ $evidenceViewedCount }}/{{ $evidenceTotalCount }} viewed
                     </span>
                     <button type="button" class="btn btn-primary btn-sm" disabled title="Coming in a later milestone">
                         Submit Diagnosis

@@ -9,6 +9,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Student\CaseAttemptController;
 use App\Http\Controllers\Student\CaseCatalogController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
+use App\Http\Controllers\Student\EvidenceController;
 use App\Models\CaseAttempt;
 use Illuminate\Support\Facades\Route;
 
@@ -48,7 +49,7 @@ Route::post('/incidents/{case:slug}/start', [CaseAttemptController::class, 'stor
     ->middleware('auth')
     ->name('attempts.store');
 
-// Investigation Workspace — Milestone 1 (shell/layout only, see
+// Investigation Workspace — Milestone 2 (Evidence Explorer + Viewer; see
 // CaseAttemptController::show()). EnsureAttemptBelongsToUser protects
 // every attempt-scoped route regardless of how much of the workspace is
 // built yet.
@@ -56,13 +57,16 @@ Route::get('/investigation/{attempt}', [CaseAttemptController::class, 'show'])
     ->middleware(['auth', 'attempt.owner'])
     ->name('investigation.show');
 
+// Records that the student opened this evidence item (EvidenceInvestigationService
+// -> EvidenceViewed event -> RecordEvidenceView listener, per the architecture
+// doc's Example 1 trace). Fired client-side whenever a tab is activated.
+Route::post('/investigation/{attempt}/evidence/{evidenceItem}/view', [EvidenceController::class, 'recordView'])
+    ->middleware(['auth', 'attempt.owner'])
+    ->name('investigation.evidence.view');
+
 // Performance Review is a later screen — kept as a real placeholder route
 // (same scaffolding pattern used throughout this phase) so the Briefing's
 // "View Past Report" link has somewhere real to go instead of a 404.
-Route::get('/performance-review/{attempt}', function (CaseAttempt $attempt) {
-    return view('placeholder', ['title' => 'Performance Review']);
-})->middleware(['auth', 'attempt.owner'])->name('performance-review.show');
-
 Route::get('/performance-review/{attempt}', function (CaseAttempt $attempt) {
     return view('placeholder', ['title' => 'Performance Review']);
 })->middleware(['auth', 'attempt.owner'])->name('performance-review.show');
