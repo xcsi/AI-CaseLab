@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Student;
 
 use App\Enums\AttemptStatus;
 use App\Enums\CaseDifficulty;
+use App\Enums\CaseStatus;
 use App\Http\Controllers\Controller;
+use App\Models\CaseAttempt;
 use App\Models\CaseModel;
 use App\Models\Category;
 use Illuminate\Database\Eloquent\Builder;
@@ -56,6 +58,31 @@ class CaseCatalogController extends Controller
             'cases' => $cases,
             'categories' => Category::orderBy('name')->get(),
             'anyPublishedCases' => CaseModel::published()->exists(),
+        ]);
+    }
+
+    public function show(CaseModel $case): View
+    {
+        if ($case->trashed() || $case->status !== CaseStatus::Published) {
+            return view('incidents.unavailable');
+        }
+
+        $case->load(['category', 'hints']);
+
+        $userId = auth()->id();
+        $attempts = $userId
+            ? CaseAttempt::where('case_id', $case->id)->where('user_id', $userId)->latest('updated_at')->get()
+            : collect();
+
+        return view('incidents.show', [
+            'case' => $case,
+            'latestAttempt' => $attempts->first(),
+            'latestCompletedAttempt' => $attempts->firstWhere('status', AttemptStatus::Completed),
+            'evidenceTypeCounts' => $case->evidenceItems()
+                ->join('evidence_types', 'evidence_types.id', '=', 'evidence_items.evidence_type_id')
+                ->selectRaw('evidence_types.label as label, count(*) as total')
+                ->groupBy('evidence_types.label')
+                ->pluck('total', 'label'),
         ]);
     }
 
