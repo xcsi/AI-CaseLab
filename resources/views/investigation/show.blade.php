@@ -11,6 +11,7 @@
 <x-workspace-layout
     :title="$case->title"
     :exit-url="route('cases.show', $case)"
+    :started-at="$attempt->started_at->toIso8601String()"
     :evidence-viewed-count="$evidenceViewedCount"
     :evidence-total-count="$evidenceTotalCount"
 >
@@ -206,6 +207,29 @@
             const viewedIds = new Set(@json($viewedEvidenceItemIds->map(fn ($id) => (string) $id)));
             const openTabs = ['ticket'];
             const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+            // Elapsed Timer (Milestone 5) — ticks from the attempt's
+            // server-recorded started_at, so a reload just recomputes the
+            // correct elapsed time instead of needing its own persistence.
+            const timerEl = document.getElementById('workspace-timer');
+            if (timerEl && timerEl.dataset.startedAt) {
+                const startedAtMs = new Date(timerEl.dataset.startedAt).getTime();
+
+                function formatElapsed(totalSeconds) {
+                    const hours = Math.floor(totalSeconds / 3600);
+                    const minutes = Math.floor((totalSeconds % 3600) / 60);
+                    const seconds = totalSeconds % 60;
+                    return [hours, minutes, seconds].map((n) => String(n).padStart(2, '0')).join(':');
+                }
+
+                function tickTimer() {
+                    const elapsedSeconds = Math.max(0, Math.floor((Date.now() - startedAtMs) / 1000));
+                    timerEl.textContent = `⏱ ${formatElapsed(elapsedSeconds)}`;
+                }
+
+                tickTimer();
+                setInterval(tickTimer, 1000);
+            }
 
             function updateProgressCounter() {
                 const el = document.getElementById('workspace-progress');

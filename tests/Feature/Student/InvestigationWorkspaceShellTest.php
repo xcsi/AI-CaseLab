@@ -79,7 +79,22 @@ class InvestigationWorkspaceShellTest extends TestCase
         $response->assertSee(route('cases.show', $case), false);
     }
 
-    public function test_timer_and_progress_are_static_placeholders(): void
+    public function test_the_timer_is_seeded_with_the_attempts_started_at(): void
+    {
+        $student = User::factory()->create();
+        $attempt = CaseAttempt::factory()->create([
+            'user_id' => $student->id,
+            'started_at' => now()->subMinutes(5),
+        ]);
+
+        $response = $this->actingAs($student)->get(route('investigation.show', $attempt));
+
+        $response->assertOk();
+        $response->assertSee('id="workspace-timer"', false);
+        $response->assertSee('data-started-at="' . $attempt->started_at->toIso8601String() . '"', false);
+    }
+
+    public function test_the_evidence_viewed_counter_starts_at_zero_of_zero_for_a_fresh_attempt(): void
     {
         $student = User::factory()->create();
         $attempt = CaseAttempt::factory()->create(['user_id' => $student->id]);
@@ -87,7 +102,6 @@ class InvestigationWorkspaceShellTest extends TestCase
         $response = $this->actingAs($student)->get(route('investigation.show', $attempt));
 
         $response->assertOk();
-        $response->assertSeeText('--:--:--');
         $response->assertSeeText('0/0 viewed');
     }
 }

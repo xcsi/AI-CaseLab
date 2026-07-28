@@ -21,16 +21,16 @@
                 the Workspace collapses to a slim bar so the investigation gets
                 the whole screen, per the approved UX spec.
             --}}
-            <header class="workspace-topbar d-flex align-items-center justify-content-between gap-3 px-3 py-2 border-bottom bg-white flex-shrink-0">
+            <header class="workspace-topbar d-flex flex-wrap flex-sm-nowrap align-items-center justify-content-between gap-2 gap-sm-3 px-3 py-2 border-bottom bg-white flex-shrink-0">
                 <div class="d-flex align-items-center gap-3 min-w-0">
                     <a href="{{ $exitUrl }}" id="workspace-exit-link" class="text-secondary text-decoration-none text-nowrap" title="Exit Investigation">
                         &larr; Exit
                     </a>
-                    <span class="fw-semibold text-truncate">{{ $title }}</span>
+                    <span class="fw-semibold text-truncate min-w-0">{{ $title }}</span>
                 </div>
 
-                <div class="d-flex align-items-center gap-3 flex-shrink-0">
-                    <span class="text-secondary small font-monospace" title="Elapsed time — coming in a later milestone">
+                <div class="d-flex align-items-center gap-2 gap-sm-3 flex-shrink-0">
+                    <span class="text-secondary small font-monospace" id="workspace-timer" data-started-at="{{ $startedAt }}">
                         ⏱ --:--:--
                     </span>
                     <span class="text-secondary small text-nowrap" id="workspace-progress" data-viewed="{{ $evidenceViewedCount }}" data-total="{{ $evidenceTotalCount }}">

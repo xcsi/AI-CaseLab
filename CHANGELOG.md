@@ -68,6 +68,21 @@ the first release is tagged.
   different case. Unlocked hints persist and re-render with their
   content on reload via `HintUnlock` records eager-loaded on
   `CaseAttemptController::show`.
+- **Phase 5, Milestone 5 — Timer & Progress Tracking:** the Workspace top
+  bar's elapsed-time display now ticks live from the attempt's existing
+  `case_attempts.started_at`, computed client-side and re-derived correctly
+  on every reload since the server timestamp — not client/session state —
+  is the source of truth; the evidence-viewed counter (Milestone 2)
+  continues to update alongside it. Fixed a latent responsive bug in the
+  same top bar surfaced while QAing this milestone: `.min-w-0`/`.min-h-0`
+  were used throughout the workspace layout as if they were Bootstrap
+  utilities, but Bootstrap 5's default utilities API only ships
+  `min-vw-100`/`min-vh-100` — the classes were silently inert. Added real
+  `.min-w-0`/`.min-h-0` utility rules and made the top bar wrap
+  (`flex-wrap`/`flex-sm-nowrap`) below the `sm` breakpoint, so the timer,
+  evidence-viewed counter, and Submit Diagnosis button no longer overflow
+  the viewport on narrow screens and the case title truncates correctly
+  instead of forcing horizontal scroll.
 
 ### Changed
 
