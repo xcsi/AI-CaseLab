@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CaseAttempt;
 use App\Models\CaseModel;
 use App\Models\EvidenceView;
+use App\Models\HintUnlock;
 use App\Services\CaseAttemptService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -33,17 +34,21 @@ class CaseAttemptController extends Controller
     }
 
     /**
-     * Milestone 3 — Evidence Explorer/Viewer + Engineering Notebook. Timer
-     * and hint data are still wired in by later milestones.
+     * Milestone 4 — Evidence Explorer/Viewer + Engineering Notebook + Hint
+     * Unlocking. Timer and diagnosis submission are still wired in by later
+     * milestones.
      */
     public function show(CaseAttempt $attempt): View
     {
-        $attempt->load(['case.evidenceItems.evidenceType', 'investigationNote']);
+        $attempt->load(['case.evidenceItems.evidenceType', 'case.hints', 'investigationNote']);
 
         return view('investigation.show', [
             'attempt' => $attempt,
             'viewedEvidenceItemIds' => EvidenceView::where('case_attempt_id', $attempt->id)
                 ->pluck('evidence_item_id'),
+            'hintUnlocks' => HintUnlock::where('case_attempt_id', $attempt->id)
+                ->get()
+                ->keyBy('hint_id'),
         ]);
     }
 }
