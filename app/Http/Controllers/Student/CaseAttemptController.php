@@ -7,6 +7,7 @@ use App\Exceptions\ReattemptNotAllowedException;
 use App\Http\Controllers\Controller;
 use App\Models\CaseAttempt;
 use App\Models\CaseModel;
+use App\Models\EvidenceView;
 use App\Services\CaseAttemptService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -32,13 +33,17 @@ class CaseAttemptController extends Controller
     }
 
     /**
-     * Milestone 1 — Workspace Shell: layout only. Evidence, notes, timer,
-     * and hint data are wired in by later milestones.
+     * Milestone 2 — Evidence Explorer + Viewer. Notes, timer, and hint
+     * data are still wired in by later milestones.
      */
     public function show(CaseAttempt $attempt): View
     {
+        $attempt->load(['case.evidenceItems.evidenceType']);
+
         return view('investigation.show', [
-            'attempt' => $attempt->load('case'),
+            'attempt' => $attempt,
+            'viewedEvidenceItemIds' => EvidenceView::where('case_attempt_id', $attempt->id)
+                ->pluck('evidence_item_id'),
         ]);
     }
 }

@@ -10,6 +10,8 @@ class WorkspaceLayout extends Component
     public function __construct(
         public string $title,
         public string $exitUrl,
+        public int $evidenceViewedCount = 0,
+        public int $evidenceTotalCount = 0,
     ) {}
 
     /**
