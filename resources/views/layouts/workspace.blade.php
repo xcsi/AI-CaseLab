@@ -23,7 +23,7 @@
             --}}
             <header class="workspace-topbar d-flex align-items-center justify-content-between gap-3 px-3 py-2 border-bottom bg-white flex-shrink-0">
                 <div class="d-flex align-items-center gap-3 min-w-0">
-                    <a href="{{ $exitUrl }}" class="text-secondary text-decoration-none text-nowrap" title="Exit Investigation">
+                    <a href="{{ $exitUrl }}" id="workspace-exit-link" class="text-secondary text-decoration-none text-nowrap" title="Exit Investigation">
                         &larr; Exit
                     </a>
                     <span class="fw-semibold text-truncate">{{ $title }}</span>
