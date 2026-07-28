@@ -6,9 +6,10 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\HintController;
 use App\Http\Controllers\Admin\RubricCriterionController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Student\CaseAttemptController;
 use App\Http\Controllers\Student\CaseCatalogController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
-use App\Models\CaseModel;
+use App\Models\CaseAttempt;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -33,12 +34,33 @@ Route::middleware('auth')->group(function () {
 // public-ish backlog before a student commits to an incident.
 Route::get('/incidents', [CaseCatalogController::class, 'index'])->name('cases.index');
 
-// Incident Briefing doesn't exist yet (a later screen) — kept as a real
-// placeholder route, same scaffolding pattern as /work-history below, so
-// the catalog's card links have somewhere real to go instead of a 404.
-Route::get('/incidents/{case:slug}', function (CaseModel $case) {
-    return view('placeholder', ['title' => 'Incident Briefing']);
-})->name('cases.show');
+// Incident Briefing — withTrashed() so an archived/unpublished case still
+// resolves to the controller (which renders the friendly "no longer
+// available" state) instead of a raw 404, per the approved UX spec.
+Route::get('/incidents/{case:slug}', [CaseCatalogController::class, 'show'])
+    ->withTrashed()
+    ->name('cases.show');
+
+// Starts or resumes the student's attempt at this case — real behavior
+// (CaseAttemptService::start(), Phase 5 scope per the architecture doc),
+// redirecting into Investigation Workspace, which doesn't exist yet.
+Route::post('/incidents/{case:slug}/start', [CaseAttemptController::class, 'store'])
+    ->middleware('auth')
+    ->name('attempts.store');
+
+// Investigation Workspace and Performance Review are later screens — kept
+// as real placeholder routes (same scaffolding pattern used throughout
+// this phase) so the Briefing's CTA and "View Past Report" link have
+// somewhere real to go instead of a 404. EnsureAttemptBelongsToUser is
+// wired in now so it protects real content from day one once these
+// screens are built, rather than being retrofitted later.
+Route::get('/investigation/{attempt}', function (CaseAttempt $attempt) {
+    return view('placeholder', ['title' => 'Investigation Workspace']);
+})->middleware(['auth', 'attempt.owner'])->name('investigation.show');
+
+Route::get('/performance-review/{attempt}', function (CaseAttempt $attempt) {
+    return view('placeholder', ['title' => 'Performance Review']);
+})->middleware(['auth', 'attempt.owner'])->name('performance-review.show');
 
 Route::get('/work-history', function () {
     return view('placeholder', ['title' => 'Work History']);
