@@ -1,6 +1,19 @@
 @import "variables";
 @import "bootstrap/scss/bootstrap";
 
+// Bootstrap's utilities API ships min-vw-100/min-vh-100 but no generic
+// min-width/min-height utilities (that's a Tailwind convention, not
+// Bootstrap's) — the workspace flex layout depends on min-w-0/min-h-0 to let
+// truncating text and scrolling panes shrink below their content size, so
+// they're defined here for real.
+.min-w-0 {
+    min-width: 0 !important;
+}
+
+.min-h-0 {
+    min-height: 0 !important;
+}
+
 // Engineering Office shell: active nav item reads as underlined + bold,
 // not a filled pill — keeps the primary nav calm (docs/09 UX spec, Shell).
 .navbar-nav .nav-link.active {
