@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Student;
 use App\Enums\CaseStatus;
 use App\Exceptions\ReattemptNotAllowedException;
 use App\Http\Controllers\Controller;
+use App\Models\CaseAttempt;
 use App\Models\CaseModel;
 use App\Services\CaseAttemptService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 
 class CaseAttemptController extends Controller
 {
@@ -27,5 +29,16 @@ class CaseAttemptController extends Controller
         }
 
         return redirect()->route('investigation.show', $attempt);
+    }
+
+    /**
+     * Milestone 1 — Workspace Shell: layout only. Evidence, notes, timer,
+     * and hint data are wired in by later milestones.
+     */
+    public function show(CaseAttempt $attempt): View
+    {
+        return view('investigation.show', [
+            'attempt' => $attempt->load('case'),
+        ]);
     }
 }
