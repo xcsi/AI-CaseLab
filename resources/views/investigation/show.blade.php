@@ -86,9 +86,48 @@
             </div>
 
             <div id="ws-panel-notes" class="d-none d-lg-flex" style="flex: 0 0 320px;">
-                <x-workspace-pane title="Engineering Notebook" class="flex-grow-1 border-end-0">
-                    <p class="text-secondary small mb-0">Engineering Notebook &mdash; coming in Milestone 3.</p>
+                <x-workspace-pane title="Engineering Notebook" class="flex-grow-1 border-end-0" body-class="p-0 d-flex flex-column">
+                    <x-slot:headerActions>
+                        <button type="button" class="btn btn-sm btn-link p-0 text-secondary" id="notebook-collapse" aria-label="Collapse Engineering Notebook" title="Collapse Engineering Notebook">
+                            &raquo;
+                        </button>
+                    </x-slot:headerActions>
+
+                    <textarea
+                        id="notebook-textarea"
+                        class="form-control flex-grow-1 evidence-notebook-textarea"
+                        placeholder="Jot down what you notice — referenced evidence, suspicions, dead ends"
+                    >{{ $attempt->investigationNote?->content }}</textarea>
+
+                    <div class="px-3 py-2 border-top small text-secondary flex-shrink-0" id="notebook-status">
+                        @if ($attempt->investigationNote?->updated_at)
+                            Saved &middot; {{ $attempt->investigationNote->updated_at->format('H:i') }}
+                        @endif
+                    </div>
                 </x-workspace-pane>
+            </div>
+
+            <button type="button" id="notebook-reopen" class="d-none align-items-center justify-content-center btn btn-sm btn-outline-secondary flex-shrink-0 evidence-notebook-reopen" aria-label="Expand Engineering Notebook" title="Expand Engineering Notebook">
+                Engineering Notebook
+            </button>
+        </div>
+    </div>
+
+    {{-- Exit confirmation: only shown when the notebook has unsaved edits. --}}
+    <div class="modal fade" id="notebook-exit-confirm" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Leave without saving?</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">Your Engineering Notebook has changes that haven't finished saving yet.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Stay</button>
+                    <button type="button" class="btn btn-danger" id="notebook-exit-confirm-leave">Leave Anyway</button>
+                </div>
             </div>
         </div>
     </div>
@@ -217,6 +256,100 @@
                     document.getElementById('evidence-lightbox-image').alt = image.alt;
                     bootstrap.Modal.getOrCreateInstance(document.getElementById('evidence-lightbox')).show();
                 });
+            });
+
+            // Engineering Notebook — debounced autosave (Milestone 3).
+            const notebookTextarea = document.getElementById('notebook-textarea');
+            const notebookStatus = document.getElementById('notebook-status');
+            const notesPanel = document.getElementById('ws-panel-notes');
+            const notebookReopen = document.getElementById('notebook-reopen');
+            let notebookDebounceTimer = null;
+            let notebookSaveInFlight = false;
+            let notebookSavePending = false;
+            let notebookDirty = false;
+            let notebookRetryCount = 0;
+
+            function formatSavedAt(iso) {
+                return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+
+            function saveNotebook() {
+                if (notebookSaveInFlight) {
+                    notebookSavePending = true;
+                    return;
+                }
+
+                notebookSaveInFlight = true;
+                notebookStatus.textContent = 'Saving…';
+
+                fetch(`/investigation/${attemptId}/notes`, {
+                    method: 'PATCH',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ content: notebookTextarea.value }),
+                })
+                    .then((response) => {
+                        if (!response.ok) throw new Error('notebook save failed');
+                        return response.json();
+                    })
+                    .then((data) => {
+                        notebookSaveInFlight = false;
+                        notebookRetryCount = 0;
+                        notebookDirty = false;
+                        notebookStatus.textContent = `Saved · ${formatSavedAt(data.saved_at)}`;
+
+                        if (notebookSavePending) {
+                            notebookSavePending = false;
+                            saveNotebook();
+                        }
+                    })
+                    .catch(() => {
+                        notebookSaveInFlight = false;
+                        notebookRetryCount += 1;
+
+                        if (notebookRetryCount <= 3) {
+                            setTimeout(saveNotebook, 1500 * notebookRetryCount);
+                        } else {
+                            notebookStatus.textContent = "Couldn't save your note — retrying…";
+                            setTimeout(() => {
+                                notebookRetryCount = 0;
+                                saveNotebook();
+                            }, 8000);
+                        }
+                    });
+            }
+
+            notebookTextarea?.addEventListener('input', () => {
+                notebookDirty = true;
+                clearTimeout(notebookDebounceTimer);
+                notebookDebounceTimer = setTimeout(saveNotebook, 800);
+            });
+
+            document.getElementById('notebook-collapse')?.addEventListener('click', () => {
+                notesPanel.classList.add('d-none');
+                notesPanel.classList.remove('d-lg-flex');
+                notebookReopen.classList.remove('d-none');
+                notebookReopen.classList.add('d-lg-flex');
+            });
+
+            notebookReopen?.addEventListener('click', () => {
+                notesPanel.classList.remove('d-none');
+                notesPanel.classList.add('d-lg-flex');
+                notebookReopen.classList.add('d-none');
+                notebookReopen.classList.remove('d-lg-flex');
+            });
+
+            document.getElementById('workspace-exit-link')?.addEventListener('click', (event) => {
+                if (!notebookDirty) return;
+                event.preventDefault();
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('notebook-exit-confirm')).show();
+            });
+
+            document.getElementById('notebook-exit-confirm-leave')?.addEventListener('click', () => {
+                window.location.href = document.getElementById('workspace-exit-link').href;
             });
 
             document.getElementById('workspace-phone-continue')?.addEventListener('click', () => {

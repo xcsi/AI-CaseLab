@@ -10,6 +10,7 @@ use App\Http\Controllers\Student\CaseAttemptController;
 use App\Http\Controllers\Student\CaseCatalogController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use App\Http\Controllers\Student\EvidenceController;
+use App\Http\Controllers\Student\NotebookController;
 use App\Models\CaseAttempt;
 use Illuminate\Support\Facades\Route;
 
@@ -63,6 +64,13 @@ Route::get('/investigation/{attempt}', [CaseAttemptController::class, 'show'])
 Route::post('/investigation/{attempt}/evidence/{evidenceItem}/view', [EvidenceController::class, 'recordView'])
     ->middleware(['auth', 'attempt.owner'])
     ->name('investigation.evidence.view');
+
+// Engineering Notebook autosave (Milestone 3) — debounced PATCH from the
+// workspace's notebook textarea, upserting the attempt's single
+// investigation_notes row.
+Route::patch('/investigation/{attempt}/notes', [NotebookController::class, 'update'])
+    ->middleware(['auth', 'attempt.owner'])
+    ->name('investigation.notes.update');
 
 // Performance Review is a later screen — kept as a real placeholder route
 // (same scaffolding pattern used throughout this phase) so the Briefing's

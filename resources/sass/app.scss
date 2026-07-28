@@ -202,3 +202,16 @@
 .evidence-screenshot-error {
     display: none;
 }
+
+// Engineering Notebook (Milestone 3).
+.evidence-notebook-textarea {
+    border: none;
+    border-radius: 0;
+    resize: none;
+    box-shadow: none !important;
+}
+
+.evidence-notebook-reopen {
+    writing-mode: vertical-rl;
+    padding: 0.75rem 0.4rem;
+}

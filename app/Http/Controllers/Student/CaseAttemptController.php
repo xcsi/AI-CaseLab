@@ -33,12 +33,12 @@ class CaseAttemptController extends Controller
     }
 
     /**
-     * Milestone 2 — Evidence Explorer + Viewer. Notes, timer, and hint
-     * data are still wired in by later milestones.
+     * Milestone 3 — Evidence Explorer/Viewer + Engineering Notebook. Timer
+     * and hint data are still wired in by later milestones.
      */
     public function show(CaseAttempt $attempt): View
     {
-        $attempt->load(['case.evidenceItems.evidenceType']);
+        $attempt->load(['case.evidenceItems.evidenceType', 'investigationNote']);
 
         return view('investigation.show', [
             'attempt' => $attempt,
