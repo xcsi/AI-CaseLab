@@ -3,6 +3,9 @@
     $groupedEvidence = $case->evidenceItems->groupBy(fn ($item) => $item->evidenceType->label);
     $evidenceTotalCount = $case->evidenceItems->count();
     $evidenceViewedCount = $viewedEvidenceItemIds->count();
+    $orderedHints = $case->hints->sortBy('order_index')->values();
+
+    $formatPenalty = fn ($value) => rtrim(rtrim(number_format((float) $value, 2), '0'), '.');
 @endphp
 
 <x-workspace-layout
@@ -61,6 +64,38 @@
                         @empty
                             <p class="text-secondary small mt-3 mb-0">No other evidence has been added to this incident yet.</p>
                         @endforelse
+
+                        @if ($orderedHints->isNotEmpty())
+                            <div class="evidence-explorer-group hints-group">
+                                <div class="evidence-explorer-group-label">Hints</div>
+
+                                @foreach ($orderedHints as $hint)
+                                    @php $unlock = $hintUnlocks->get($hint->id); @endphp
+                                    <div class="hint-row {{ $unlock ? 'hint-row-unlocked' : '' }}" data-hint-id="{{ $hint->id }}">
+                                        @if ($unlock)
+                                            <div class="hint-row-header">
+                                                <span class="hint-check">&check;</span>
+                                                <span class="hint-label">Hint {{ $loop->iteration }}</span>
+                                                <span class="badge text-bg-light hint-penalty-chip">&minus;{{ $formatPenalty($unlock->penalty_applied) }} pts</span>
+                                            </div>
+                                            <p class="hint-content small text-secondary mb-0">{{ $hint->content }}</p>
+                                        @else
+                                            <button
+                                                type="button"
+                                                class="hint-unlock-btn"
+                                                data-hint-id="{{ $hint->id }}"
+                                                data-penalty="{{ $hint->score_penalty }}"
+                                                data-label="Hint {{ $loop->iteration }}"
+                                            >
+                                                <span class="hint-lock-icon" aria-hidden="true">&#128274;</span>
+                                                <span class="hint-label">Hint {{ $loop->iteration }}</span>
+                                                <span class="badge text-bg-light hint-penalty-chip ms-auto">&minus;{{ $formatPenalty($hint->score_penalty) }} pts</span>
+                                            </button>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
                 </x-workspace-pane>
 
@@ -127,6 +162,25 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Stay</button>
                     <button type="button" class="btn btn-danger" id="notebook-exit-confirm-leave">Leave Anyway</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Hint unlock confirmation: one shared modal, reused by every locked hint. --}}
+    <div class="modal fade" id="hint-unlock-confirm" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ask a senior engineer?</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0" id="hint-unlock-confirm-text"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-warning" id="hint-unlock-confirm-proceed">Unlock Hint</button>
                 </div>
             </div>
         </div>
@@ -350,6 +404,66 @@
 
             document.getElementById('notebook-exit-confirm-leave')?.addEventListener('click', () => {
                 window.location.href = document.getElementById('workspace-exit-link').href;
+            });
+
+            // Hint Unlocking (Milestone 4).
+            let pendingHintButton = null;
+
+            function formatPenaltyDisplay(value) {
+                const num = parseFloat(value);
+                return Number.isInteger(num) ? String(num) : String(num);
+            }
+
+            document.querySelectorAll('.hint-unlock-btn').forEach((button) => {
+                button.addEventListener('click', () => {
+                    pendingHintButton = button;
+                    document.getElementById('hint-unlock-confirm-text').textContent =
+                        `This will reduce your max score by ${formatPenaltyDisplay(button.dataset.penalty)} pts — continue?`;
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('hint-unlock-confirm')).show();
+                });
+            });
+
+            document.getElementById('hint-unlock-confirm-proceed')?.addEventListener('click', function () {
+                if (!pendingHintButton) return;
+
+                const button = pendingHintButton;
+                const hintId = button.dataset.hintId;
+                const hintLabel = button.dataset.label;
+                const proceedButton = this;
+
+                button.disabled = true;
+                proceedButton.disabled = true;
+                proceedButton.textContent = 'Unlocking…';
+
+                fetch(`/investigation/${attemptId}/hints/${hintId}/unlock`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                })
+                    .then((response) => response.json())
+                    .then((data) => {
+                        const row = button.closest('.hint-row');
+                        row.classList.add('hint-row-unlocked');
+                        row.innerHTML = `
+                            <div class="hint-row-header">
+                                <span class="hint-check">&check;</span>
+                                <span class="hint-label"></span>
+                                <span class="badge text-bg-light hint-penalty-chip">&minus;${formatPenaltyDisplay(data.penalty_applied)} pts</span>
+                            </div>
+                            <p class="hint-content small text-secondary mb-0"></p>
+                        `;
+                        row.querySelector('.hint-label').textContent = hintLabel;
+                        row.querySelector('.hint-content').textContent = data.content;
+
+                        bootstrap.Modal.getOrCreateInstance(document.getElementById('hint-unlock-confirm')).hide();
+                    })
+                    .catch(() => {
+                        button.disabled = false;
+                    })
+                    .finally(() => {
+                        proceedButton.disabled = false;
+                        proceedButton.textContent = 'Unlock Hint';
+                        pendingHintButton = null;
+                    });
             });
 
             document.getElementById('workspace-phone-continue')?.addEventListener('click', () => {

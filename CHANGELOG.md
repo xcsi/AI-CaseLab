@@ -56,6 +56,18 @@ the first release is tagged.
   evaluation) through the repositories and asserts every relationship
   resolves both directions, per the roadmap's Phase 3 acceptance
   criteria.
+- **Phase 5, Milestone 4 — Hint Unlocking:** Evidence Explorer's Hints
+  group now renders each case hint locked with its point penalty and,
+  on click, a shared confirm modal ("Ask a senior engineer?") before
+  unlocking; `HintUnlockService::unlock()` is idempotent (re-unlocking
+  an already-unlocked hint is a no-op) and deducts the hint's
+  `score_penalty` from the attempt's `max_possible_score`, floored at
+  zero, inside a DB transaction with a row lock; `HintController::unlock`
+  (`POST /investigation/{attempt}/hints/{hint}/unlock`, gated by the
+  existing `attempt.owner` middleware) rejects hints belonging to a
+  different case. Unlocked hints persist and re-render with their
+  content on reload via `HintUnlock` records eager-loaded on
+  `CaseAttemptController::show`.
 
 ### Changed
 

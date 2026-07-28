@@ -10,6 +10,7 @@ use App\Http\Controllers\Student\CaseAttemptController;
 use App\Http\Controllers\Student\CaseCatalogController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use App\Http\Controllers\Student\EvidenceController;
+use App\Http\Controllers\Student\HintController as StudentHintController;
 use App\Http\Controllers\Student\NotebookController;
 use App\Models\CaseAttempt;
 use Illuminate\Support\Facades\Route;
@@ -71,6 +72,13 @@ Route::post('/investigation/{attempt}/evidence/{evidenceItem}/view', [EvidenceCo
 Route::patch('/investigation/{attempt}/notes', [NotebookController::class, 'update'])
     ->middleware(['auth', 'attempt.owner'])
     ->name('investigation.notes.update');
+
+// Hint unlocking (Milestone 4) — idempotent penalty deduction via
+// HintUnlockService. abort_unless inside the controller guards against a
+// hint from a different case being unlocked against this attempt.
+Route::post('/investigation/{attempt}/hints/{hint}/unlock', [StudentHintController::class, 'unlock'])
+    ->middleware(['auth', 'attempt.owner'])
+    ->name('investigation.hints.unlock');
 
 // Performance Review is a later screen — kept as a real placeholder route
 // (same scaffolding pattern used throughout this phase) so the Briefing's
