@@ -75,6 +75,21 @@ class EvaluationEngineTest extends TestCase
         $this->assertSame(0.0, $result->scoreAwarded);
     }
 
+    public function test_keyword_strategy_awards_full_weight_when_no_keywords_are_configured(): void
+    {
+        $criterion = RubricCriterion::factory()->make([
+            'weight' => 12,
+            'expected_data' => ['keywords' => []],
+        ]);
+        $diagnosis = Diagnosis::factory()->make();
+
+        $result = (new KeywordMatchStrategy)->evaluate($criterion, $diagnosis);
+
+        $this->assertSame(12.0, $result->scoreAwarded);
+        $this->assertSame(12.0, $result->maxScore);
+        $this->assertFalse($result->pendingManualReview);
+    }
+
     // --- EvidenceCitationStrategy ----------------------------------------------
 
     public function test_evidence_citation_strategy_awards_proportional_credit(): void
