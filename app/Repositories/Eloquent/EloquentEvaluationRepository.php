@@ -28,4 +28,20 @@ class EloquentEvaluationRepository implements EvaluationRepositoryInterface
     {
         return (bool) $evaluation->delete();
     }
+
+    public function scorePercentages(?array $caseIds = null): array
+    {
+        $query = Evaluation::query()->where('max_score', '>', 0);
+
+        if ($caseIds !== null) {
+            $query->whereHas('caseAttempt', fn ($q) => $q->whereIn('case_id', $caseIds));
+        }
+
+        return $query->get(['total_score', 'max_score'])
+            ->map(fn (Evaluation $evaluation) => round(
+                (float) $evaluation->total_score / (float) $evaluation->max_score * 100,
+                2
+            ))
+            ->all();
+    }
 }

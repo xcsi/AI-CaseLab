@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\CaseController as AdminCaseController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\EvaluationReviewController;
 use App\Http\Controllers\Admin\HintController;
 use App\Http\Controllers\Admin\RubricCriterionController;
 use App\Http\Controllers\ProfileController;
@@ -116,13 +118,17 @@ Route::middleware(['auth', 'role:admin,instructor'])->prefix('admin')->name('adm
 
     Route::resource('categories', CategoryController::class)->except(['create', 'show', 'edit']);
 
+    // Manual Review (Phase 6, Milestone 2) — EvaluationPolicy allows both
+    // admin and instructor, unlike case authoring above which is admin-only.
+    Route::resource('evaluations', EvaluationReviewController::class)->only(['index', 'edit', 'update']);
+
     Route::get('/users', function () {
         return view('placeholder', ['title' => 'Users', 'layout' => 'admin']);
     })->name('users.index');
 
-    Route::get('/analytics', function () {
-        return view('placeholder', ['title' => 'Analytics', 'layout' => 'admin']);
-    })->name('analytics.index');
+    // Analytics Dashboard (Phase 6, Milestone 4) — pure rendering layer over
+    // AnalyticsService (Milestone 3); no queries or aggregation here.
+    Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
 });
 
 require __DIR__.'/auth.php';

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,6 +21,9 @@ class Evaluation extends Model
         'strategy_used',
         'metadata',
         'evaluated_at',
+        'reviewed_at',
+        'reviewed_by',
+        'instructor_comment',
     ];
 
     protected function casts(): array
@@ -27,6 +31,7 @@ class Evaluation extends Model
         return [
             'metadata' => 'array',
             'evaluated_at' => 'datetime',
+            'reviewed_at' => 'datetime',
         ];
     }
 
@@ -43,5 +48,40 @@ class Evaluation extends Model
     public function criterionResults(): HasMany
     {
         return $this->hasMany(EvaluationCriterionResult::class);
+    }
+
+    public function reviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    /**
+     * True while at least one criterion is still `pending_manual_review`
+     * (ManualReviewStrategy's stub result) and hasn't received an
+     * instructor_score yet. Derived from existing data on purpose —
+     * no separate status column to drift out of sync.
+     */
+    public function needsInstructorReview(): bool
+    {
+        if ($this->reviewed_at !== null) {
+            return false;
+        }
+
+        return $this->criterionResults->contains(
+            fn (EvaluationCriterionResult $result) => ($result->metadata['pending_manual_review'] ?? false)
+                && $result->instructor_score === null
+        );
+    }
+
+    /**
+     * @param  Builder<Evaluation>  $query
+     * @return Builder<Evaluation>
+     */
+    public function scopeAwaitingInstructorReview(Builder $query): Builder
+    {
+        return $query->whereNull('reviewed_at')->whereHas(
+            'criterionResults',
+            fn ($q) => $q->whereNull('instructor_score')->where('metadata->pending_manual_review', true)
+        );
     }
 }
