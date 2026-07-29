@@ -334,6 +334,43 @@ the first release is tagged.
   against the real MySQL dev database (transaction rolled back after)
   to confirm the score-capping arithmetic matches the SQLite test
   results exactly.
+- **Roadmap Phase 12, Milestone 4 — Performance optimization & N+1 audit:**
+  measured real query counts (via `DB::enableQueryLog()` against seeded
+  data, scaled up to confirm flat vs. scaling behavior) on every major
+  page — Admin Dashboard, Analytics, Cases index/edit, Categories index,
+  Evaluations index, student Catalog/Dashboard/Workspace/Performance
+  Review. Found and fixed one genuine N+1: `Admin\DashboardController::
+  needsAttention()` called `CaseCatalogService::publishInvariantErrors()`
+  once per draft case, and that method ran 2 queries internally
+  (`->rubricCriteria()->doesntExist()` + `->rubricCriteria()->sum()`) —
+  2N queries that scaled with the number of drafts (measured 18 queries
+  at 5 drafts, still 18 at 15). Fixed by having the service read the
+  `rubricCriteria` relation collection instead of two separate query-
+  builder calls, and eager-loading it once in `needsAttention()`'s
+  query — now flat at 8 queries regardless of draft count (verified at
+  5 and 15). This also incidentally reduced the Case Edit page's query
+  count, since `_rubric.blade.php`'s own `$case->rubricCriteria` access
+  now reuses the same loaded relation instead of a separate lazy query.
+  Also eager-loaded `Category::with('cases:id,category_id')` in
+  `AnalyticsService::categoryAggregates()`, replacing one
+  `->cases()->pluck('id')` query-builder call per category with a
+  single batched query (57 → 51 queries at 5 categories). The remaining
+  per-category cost (`summary()` re-running its 5 scoped metric
+  queries for each category) is an intentional, documented Milestone-3
+  tradeoff — trading query count for zero duplicated aggregation logic
+  across platform/single-case/category scopes — and wasn't touched, since
+  restructuring it into batched cross-category queries would be a
+  substantial rework of that service, not a "safe" optimization, and
+  category counts are small in practice. Every other audited page
+  (Catalog, both Dashboards, Workspace, Case/Categories/Evaluations
+  indexes, Case Edit, Performance Review) was already correctly
+  eager-loaded, confirmed flat under 3x scale-up. Also confirmed every
+  index named in `docs/03-database-design.md` §4 ("Indexing Notes") is
+  already present in the migrations — nothing was missing there.
+  No behavior changes — the two touched methods return identical data,
+  verified by the full suite (unchanged, 291/291 passing) and by
+  re-rendering both fixed pages in-browser against real seeded data to
+  confirm identical output.
 
 ### Known issues
 
