@@ -67,6 +67,19 @@ class HintManagementTest extends TestCase
         $this->assertDatabaseHas('hints', ['content' => 'Third hint.', 'order_index' => 2]);
     }
 
+    public function test_guest_cannot_add_a_hint(): void
+    {
+        $case = CaseModel::factory()->create();
+
+        $response = $this->post("/admin/cases/{$case->id}/hints", [
+            'content' => 'Should not be added.',
+            'score_penalty' => 1,
+        ]);
+
+        $response->assertRedirect('/login');
+        $this->assertDatabaseMissing('hints', ['content' => 'Should not be added.']);
+    }
+
     public function test_instructor_cannot_add_a_hint(): void
     {
         $case = CaseModel::factory()->create();
@@ -113,6 +126,16 @@ class HintManagementTest extends TestCase
 
         $response->assertRedirect();
         $this->assertDatabaseMissing('hints', ['id' => $hint->id]);
+    }
+
+    public function test_guest_cannot_delete_a_hint(): void
+    {
+        $hint = Hint::factory()->create();
+
+        $response = $this->delete("/admin/hints/{$hint->id}");
+
+        $response->assertRedirect('/login');
+        $this->assertDatabaseHas('hints', ['id' => $hint->id]);
     }
 
     public function test_instructor_cannot_delete_a_hint(): void

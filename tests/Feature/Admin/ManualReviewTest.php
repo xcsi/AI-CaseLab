@@ -224,6 +224,19 @@ class ManualReviewTest extends TestCase
         $this->assertEquals($instructor->id, $evaluation->fresh()->reviewed_by);
     }
 
+    public function test_guest_cannot_submit_a_review(): void
+    {
+        [, , , $evaluation] = $this->evaluatedAttemptWithManualCriterion();
+        $result = $evaluation->criterionResults->first();
+
+        $response = $this->put(route('admin.evaluations.update', $evaluation), [
+            'criteria' => [$result->id => ['score' => 30]],
+        ]);
+
+        $response->assertRedirect('/login');
+        $this->assertNull($result->fresh()->instructor_score);
+    }
+
     public function test_student_cannot_submit_a_review(): void
     {
         [, , , $evaluation] = $this->evaluatedAttemptWithManualCriterion();
