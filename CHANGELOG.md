@@ -260,6 +260,26 @@ the first release is tagged.
   than content, since enriching them would mean a query beyond what
   `AnalyticsService` already returns. No reporting, export, or AI
   insights — those stay out of scope for a later milestone.
+- **Roadmap Phase 12, Milestone 1 — Authorization audit:** every route in
+  `routes/web.php` checked against its intended Policy. Every admin
+  write action authorizes either through a `FormRequest::authorize()`
+  delegating to a Policy (`Store`/`Update*Request` classes) or a
+  controller-level `$this->authorize()` call (`destroy`/`publish`/
+  `moveUp`/`moveDown`, which have no FormRequest); every student
+  attempt-scoped route is protected by the `attempt.owner` middleware
+  plus explicit cross-case `abort_unless` checks
+  (`EvidenceController::recordView()`, `Student\HintController::unlock()`).
+  No Policy gaps were found — the audit's actual finding was a test-
+  coverage gap: `CaseManagementTest`, `CategoryManagementTest`,
+  `HintManagementTest`, `RubricCriterionManagementTest`, and
+  `ManualReviewTest` asserted `student`/`instructor` were forbidden on
+  write actions but never asserted a guest is redirected, relying
+  implicitly on the `/admin` route group's `auth` middleware without
+  proving it per controller. Added the missing guest-redirect
+  assertions (12 new tests) so every audited route now has explicit
+  guest/student/instructor(where applicable) coverage rather than
+  inferring it from the route group. No application code changed —
+  audit-only, no new features.
 
 ### Known issues
 

@@ -123,6 +123,20 @@ class RubricCriterionManagementTest extends TestCase
         $this->assertSame(['required_evidence_ids' => []], RubricCriterion::first()->expected_data);
     }
 
+    public function test_guest_cannot_add_a_criterion(): void
+    {
+        $case = CaseModel::factory()->create();
+
+        $response = $this->post("/admin/cases/{$case->id}/rubric-criteria", [
+            'title' => 'Should not be added',
+            'weight' => 10,
+            'matching_type' => 'manual',
+        ]);
+
+        $response->assertRedirect('/login');
+        $this->assertSame(0, RubricCriterion::count());
+    }
+
     public function test_instructor_cannot_add_a_criterion(): void
     {
         $case = CaseModel::factory()->create();
@@ -199,6 +213,16 @@ class RubricCriterionManagementTest extends TestCase
 
         $this->assertSame('5.00', $case->fresh()->max_score);
         $this->assertDatabaseHas('rubric_criteria', ['id' => $keep->id]);
+    }
+
+    public function test_guest_cannot_delete_a_criterion(): void
+    {
+        $criterion = RubricCriterion::factory()->create();
+
+        $response = $this->delete("/admin/rubric-criteria/{$criterion->id}");
+
+        $response->assertRedirect('/login');
+        $this->assertDatabaseHas('rubric_criteria', ['id' => $criterion->id]);
     }
 
     public function test_instructor_cannot_delete_a_criterion(): void

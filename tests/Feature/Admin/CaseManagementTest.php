@@ -24,6 +24,11 @@ class CaseManagementTest extends TestCase
         return User::factory()->withRole(UserRole::Instructor)->create();
     }
 
+    public function test_guest_cannot_access_the_cases_index(): void
+    {
+        $this->get('/admin/cases')->assertRedirect('/login');
+    }
+
     public function test_student_cannot_access_the_cases_index(): void
     {
         $student = User::factory()->create();
@@ -106,6 +111,14 @@ class CaseManagementTest extends TestCase
         $this->assertDatabaseHas('cases', ['created_by' => $admin->id]);
     }
 
+    public function test_guest_cannot_create_a_case(): void
+    {
+        $response = $this->post('/admin/cases', $this->validCasePayload());
+
+        $response->assertRedirect('/login');
+        $this->assertDatabaseMissing('cases', ['slug' => 'login-failure-investigation']);
+    }
+
     public function test_instructor_cannot_create_a_case(): void
     {
         $response = $this->actingAs($this->instructor())->post('/admin/cases', $this->validCasePayload());
@@ -161,6 +174,19 @@ class CaseManagementTest extends TestCase
         $this->assertSame(2, $case->fresh()->version);
     }
 
+    public function test_guest_cannot_update_a_case(): void
+    {
+        $case = CaseModel::factory()->create(['title' => 'Old Title']);
+
+        $response = $this->put(
+            "/admin/cases/{$case->id}",
+            $this->validCasePayload(['slug' => $case->slug, 'title' => 'New Title'])
+        );
+
+        $response->assertRedirect('/login');
+        $this->assertDatabaseHas('cases', ['id' => $case->id, 'title' => 'Old Title']);
+    }
+
     public function test_instructor_cannot_update_a_case(): void
     {
         $case = CaseModel::factory()->create();
@@ -181,6 +207,16 @@ class CaseManagementTest extends TestCase
 
         $response->assertRedirect();
         $this->assertSoftDeleted('cases', ['id' => $case->id]);
+    }
+
+    public function test_guest_cannot_archive_a_case(): void
+    {
+        $case = CaseModel::factory()->create();
+
+        $response = $this->delete("/admin/cases/{$case->id}");
+
+        $response->assertRedirect('/login');
+        $this->assertDatabaseHas('cases', ['id' => $case->id, 'deleted_at' => null]);
     }
 
     public function test_instructor_cannot_archive_a_case(): void
