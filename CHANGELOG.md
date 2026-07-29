@@ -192,6 +192,32 @@ the first release is tagged.
   Bonus side effect: `CaseAttemptService::start()`'s reattempt gate —
   previously a documented no-op because no attempt ever reached
   `Completed` — is now live, since attempts actually reach that status.
+- **Phase 6, Milestone 2 — Manual Review:** the instructor review
+  workflow on top of Milestone 1's Evaluation Engine. Two additive
+  migrations — `evaluations` gains `reviewed_at`/`reviewed_by`/
+  `instructor_comment`; `evaluation_criterion_results` gains
+  `instructor_score`/`instructor_comment`. `score_awarded` is never
+  overwritten (it stays the auditable strategy output); `instructor_score`
+  is a nullable override, and `EvaluationCriterionResult::effectiveScore()`
+  is the one place that decides which wins. New `ManualReviewService`
+  persists the instructor's per-criterion scores/comments and calls
+  `EvaluationService::recalculateTotals()` — extracted from Milestone 1's
+  `evaluate()` — so the initial auto-evaluation and a later review recompute
+  the same total through the same code, not two implementations. New
+  `Admin\EvaluationReviewController` (index/edit/update, thin, delegates to
+  the service) behind `EvaluationPolicy` (admin or instructor, unlike
+  case-authoring policies which are admin-only) and a new "Reviews" sidebar
+  link — one new admin page, not a dashboard redesign. `Evaluation::
+  needsInstructorReview()`/`scopeAwaitingInstructorReview()` derive
+  "awaiting review" from existing criterion-result data rather than adding
+  a redundant status column. Performance Review now shows a reviewed
+  criterion's real score/instructor comment instead of the pending state,
+  with the stale "Awaiting instructor review" strategy note suppressed
+  once a score is in. No approved UX spec exists for this screen (the
+  design docs only ever said instructors "may review individual
+  submissions," v1 read-mostly) — built consistent with the existing
+  Admin Console conventions (Bootstrap cards/tables, `layouts.admin`)
+  instead of blocking on a spec that was never produced.
 
 ### Known issues
 

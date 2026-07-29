@@ -31,6 +31,11 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a href="{{ route('admin.evaluations.index') }}" class="nav-link text-white {{ request()->routeIs('admin.evaluations.*') ? 'active' : '' }}">
+                    {{ __('Reviews') }}
+                </a>
+            </li>
+            <li class="nav-item">
                 <a href="{{ route('admin.users.index') }}" class="nav-link text-white {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
                     {{ __('Users') }}
                 </a>

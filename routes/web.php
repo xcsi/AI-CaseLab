@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\CaseController as AdminCaseController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\EvaluationReviewController;
 use App\Http\Controllers\Admin\HintController;
 use App\Http\Controllers\Admin\RubricCriterionController;
 use App\Http\Controllers\ProfileController;
@@ -115,6 +116,10 @@ Route::middleware(['auth', 'role:admin,instructor'])->prefix('admin')->name('adm
     Route::resource('cases.rubric-criteria', RubricCriterionController::class)->shallow()->only(['store', 'update', 'destroy']);
 
     Route::resource('categories', CategoryController::class)->except(['create', 'show', 'edit']);
+
+    // Manual Review (Phase 6, Milestone 2) — EvaluationPolicy allows both
+    // admin and instructor, unlike case authoring above which is admin-only.
+    Route::resource('evaluations', EvaluationReviewController::class)->only(['index', 'edit', 'update']);
 
     Route::get('/users', function () {
         return view('placeholder', ['title' => 'Users', 'layout' => 'admin']);
