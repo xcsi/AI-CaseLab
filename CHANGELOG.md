@@ -394,6 +394,19 @@ the first release is tagged.
   Deployment Checklist and Release Checklist to the deployment guide.
   No business-logic changes; full suite unchanged at 291/291 passing.
 
+- **Version 2 design — AI Discussion Engine, frozen and not yet implemented:**
+  `docs/13-ai-discussion-engine-design.md` (architecture specification —
+  a provider-agnostic, cost-safe fallback-chain LLM layer defaulting to
+  free/local models; a Subject × Persona extensibility split so future
+  review modes and future subjects are additive, not a redesign; a
+  behavioral contract with golden transcripts and a provider-conformance
+  regression suite, since provider compatibility is a behavioral
+  question as well as an API one) and `docs/14-v2-implementation-roadmap.md`
+  (Phases 13–22, continuing Version 1's phase numbering and process —
+  small reviewable milestones, tests green after every one). No
+  application code changed by this entry; Version 1 (Phases 1–12) is
+  untouched. Full suite unaffected, still passing.
+
 ### Known issues
 
 - Composer's advisory-block policy rejects every Laravel 11.31–11.55
