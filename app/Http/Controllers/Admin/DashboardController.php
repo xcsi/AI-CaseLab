@@ -50,6 +50,7 @@ class DashboardController extends Controller
     private function needsAttention(): Collection
     {
         return CaseModel::where('status', CaseStatus::Draft)
+            ->with('rubricCriteria')
             ->orderByDesc('updated_at')
             ->get()
             ->map(fn (CaseModel $case) => [

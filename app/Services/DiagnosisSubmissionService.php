@@ -14,6 +14,7 @@ class DiagnosisSubmissionService
     public function __construct(
         private readonly DiagnosisRepositoryInterface $diagnosisRepository,
         private readonly CaseAttemptRepositoryInterface $caseAttempts,
+        private readonly EvaluationService $evaluations,
     ) {}
 
     /**
@@ -47,6 +48,8 @@ class DiagnosisSubmissionService
                 'status' => AttemptStatus::Submitted,
                 'submitted_at' => $submittedAt,
             ]);
+
+            $this->evaluations->evaluate($attempt, $diagnosis);
 
             return $diagnosis;
         });

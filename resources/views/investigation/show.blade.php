@@ -128,6 +128,7 @@
                         id="notebook-textarea"
                         class="form-control flex-grow-1 evidence-notebook-textarea"
                         placeholder="Jot down what you notice — referenced evidence, suspicions, dead ends"
+                        maxlength="20000"
                     >{{ $attempt->investigationNote?->content }}</textarea>
 
                     <div class="px-3 py-2 border-top small text-secondary flex-shrink-0" id="notebook-status">
@@ -173,6 +174,7 @@
                 </div>
                 <div class="modal-body">
                     <p class="mb-0" id="hint-unlock-confirm-text"></p>
+                    <p class="text-danger small mb-0 mt-2 d-none" id="hint-unlock-confirm-error">Couldn't unlock this hint &mdash; please try again.</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -450,6 +452,7 @@
                     pendingHintButton = button;
                     document.getElementById('hint-unlock-confirm-text').textContent =
                         `This will reduce your max score by ${formatPenaltyDisplay(button.dataset.penalty)} pts — continue?`;
+                    document.getElementById('hint-unlock-confirm-error').classList.add('d-none');
                     bootstrap.Modal.getOrCreateInstance(document.getElementById('hint-unlock-confirm')).show();
                 });
             });
@@ -461,16 +464,21 @@
                 const hintId = button.dataset.hintId;
                 const hintLabel = button.dataset.label;
                 const proceedButton = this;
+                const errorEl = document.getElementById('hint-unlock-confirm-error');
 
                 button.disabled = true;
                 proceedButton.disabled = true;
                 proceedButton.textContent = 'Unlocking…';
+                errorEl.classList.add('d-none');
 
                 fetch(`/investigation/${attemptId}/hints/${hintId}/unlock`, {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
                 })
-                    .then((response) => response.json())
+                    .then((response) => {
+                        if (!response.ok) throw new Error('hint unlock failed');
+                        return response.json();
+                    })
                     .then((data) => {
                         const row = button.closest('.hint-row');
                         row.classList.add('hint-row-unlocked');
@@ -489,6 +497,7 @@
                     })
                     .catch(() => {
                         button.disabled = false;
+                        errorEl.classList.remove('d-none');
                     })
                     .finally(() => {
                         proceedButton.disabled = false;

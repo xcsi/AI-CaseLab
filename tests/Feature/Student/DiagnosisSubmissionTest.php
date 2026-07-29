@@ -105,7 +105,7 @@ class DiagnosisSubmissionTest extends TestCase
         $response->assertRedirect(route('performance-review.show', $attempt));
     }
 
-    public function test_submitting_creates_a_diagnosis_and_marks_the_attempt_submitted(): void
+    public function test_submitting_creates_a_diagnosis_and_evaluates_the_attempt(): void
     {
         $student = User::factory()->create();
         $case = CaseModel::factory()->create();
@@ -131,10 +131,13 @@ class DiagnosisSubmissionTest extends TestCase
         $diagnosis = Diagnosis::where('case_attempt_id', $attempt->id)->firstOrFail();
         $this->assertTrue($diagnosis->citedEvidence->pluck('id')->contains($item->id));
 
+        // Submitting a diagnosis now runs the Evaluation Engine synchronously,
+        // so the attempt reaches Completed (not just Submitted) immediately.
         $attempt->refresh();
-        $this->assertEquals(AttemptStatus::Submitted, $attempt->status);
+        $this->assertEquals(AttemptStatus::Completed, $attempt->status);
         $this->assertNotNull($attempt->submitted_at);
-        $this->assertNull($attempt->completed_at);
+        $this->assertNotNull($attempt->completed_at);
+        $this->assertDatabaseHas('evaluations', ['case_attempt_id' => $attempt->id, 'diagnosis_id' => $diagnosis->id]);
     }
 
     public function test_submitting_twice_does_not_create_a_second_diagnosis(): void
@@ -152,6 +155,7 @@ class DiagnosisSubmissionTest extends TestCase
             ->assertRedirect(route('performance-review.show', $attempt));
 
         $this->assertSame(1, Diagnosis::where('case_attempt_id', $attempt->id)->count());
+        $this->assertSame(1, \App\Models\Evaluation::where('case_attempt_id', $attempt->id)->count());
     }
 
     public function test_root_cause_and_proposed_fix_are_required(): void

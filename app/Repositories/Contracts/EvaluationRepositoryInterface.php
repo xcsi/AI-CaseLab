@@ -19,4 +19,14 @@ interface EvaluationRepositoryInterface
     public function update(Evaluation $evaluation, array $data): Evaluation;
 
     public function delete(Evaluation $evaluation): bool;
+
+    /**
+     * Raw percentage scores (0-100) for every evaluation with a positive
+     * max_score — the raw material AnalyticsService buckets into a score
+     * distribution. Null $caseIds means platform-wide.
+     *
+     * @param  array<int, int>|null  $caseIds
+     * @return array<int, float>
+     */
+    public function scorePercentages(?array $caseIds = null): array;
 }

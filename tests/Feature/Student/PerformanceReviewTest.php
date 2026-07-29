@@ -42,7 +42,36 @@ class PerformanceReviewTest extends TestCase
         $response->assertRedirect(route('investigation.show', $attempt));
     }
 
-    public function test_it_shows_an_awaiting_evaluation_state_when_no_evaluation_exists_yet(): void
+    public function test_visiting_a_submitted_but_unevaluated_attempt_evaluates_it_on_the_spot(): void
+    {
+        $student = User::factory()->create();
+        $case = CaseModel::factory()->create();
+        $attempt = CaseAttempt::factory()->create(['user_id' => $student->id, 'case_id' => $case->id]);
+        RubricCriterion::factory()->create([
+            'case_id' => $case->id,
+            'title' => 'Identifies timeout as root cause',
+            'weight' => 30,
+            'matching_type' => 'keyword',
+            'expected_data' => ['keywords' => ['timeout']],
+        ]);
+        Diagnosis::factory()->create([
+            'case_attempt_id' => $attempt->id,
+            'root_cause_text' => 'A timeout on the payment gateway caused the failure.',
+        ]);
+
+        $response = $this->actingAs($student)->get(route('performance-review.show', $attempt));
+
+        $response->assertOk();
+        $response->assertDontSee('evaluation is still pending');
+        $response->assertSee('Per-Criterion Breakdown');
+        $response->assertSee('Identifies timeout as root cause');
+
+        $this->assertDatabaseHas('evaluations', ['case_attempt_id' => $attempt->id]);
+        $attempt->refresh();
+        $this->assertEquals(\App\Enums\AttemptStatus::Completed, $attempt->status);
+    }
+
+    public function test_it_shows_an_awaiting_evaluation_state_when_the_case_has_no_rubric_criteria(): void
     {
         $student = User::factory()->create();
         $attempt = CaseAttempt::factory()->create(['user_id' => $student->id]);
@@ -51,7 +80,6 @@ class PerformanceReviewTest extends TestCase
         $response = $this->actingAs($student)->get(route('performance-review.show', $attempt));
 
         $response->assertOk();
-        $response->assertSee('evaluation is still pending');
         $response->assertDontSee('Per-Criterion Breakdown');
     }
 

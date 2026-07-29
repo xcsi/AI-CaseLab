@@ -23,6 +23,11 @@ class CategoryManagementTest extends TestCase
         return User::factory()->withRole(UserRole::Instructor)->create();
     }
 
+    public function test_guest_cannot_access_the_categories_page(): void
+    {
+        $this->get('/admin/categories')->assertRedirect('/login');
+    }
+
     public function test_student_cannot_access_the_categories_page(): void
     {
         $student = User::factory()->create();
@@ -63,6 +68,17 @@ class CategoryManagementTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHas('status');
         $this->assertDatabaseHas('categories', ['slug' => 'cloud-infrastructure', 'name' => 'Cloud Infrastructure']);
+    }
+
+    public function test_guest_cannot_create_a_category(): void
+    {
+        $response = $this->post('/admin/categories', [
+            'name' => 'Cloud Infrastructure',
+            'slug' => 'cloud-infrastructure',
+        ]);
+
+        $response->assertRedirect('/login');
+        $this->assertDatabaseMissing('categories', ['slug' => 'cloud-infrastructure']);
     }
 
     public function test_instructor_cannot_create_a_category(): void
@@ -134,6 +150,16 @@ class CategoryManagementTest extends TestCase
 
         $response->assertRedirect();
         $response->assertSessionHasErrors('category');
+        $this->assertDatabaseHas('categories', ['id' => $category->id]);
+    }
+
+    public function test_guest_cannot_delete_a_category(): void
+    {
+        $category = Category::factory()->create();
+
+        $response = $this->delete("/admin/categories/{$category->id}");
+
+        $response->assertRedirect('/login');
         $this->assertDatabaseHas('categories', ['id' => $category->id]);
     }
 

@@ -161,6 +161,238 @@ the first release is tagged.
   literal (defense-in-depth against a stored-XSS vector if that title
   ever contains markup). Removed a dead-code ternary in the same file
   whose two branches were identical.
+- **Phase 6, Milestone 1 — Evaluation Engine (Core):** the Strategy
+  pattern from `docs/04-architecture.md` (`EvaluationStrategyInterface` +
+  `KeywordMatchStrategy`/`EvidenceCitationStrategy`/`ManualReviewStrategy`
+  + `EvaluationStrategyResolver`) plus `EvaluationService::evaluate()`,
+  which iterates a case's existing `rubric_criteria`, scores each against
+  its own already-defined `expected_data` (keyword list or required
+  evidence IDs — no new scoring rules introduced), and persists
+  `evaluations`/`evaluation_criterion_results`. Keyword/citation credit
+  is proportional (matched ÷ required × weight); manual-review criteria
+  are recorded but excluded from the total/max (no instructor workflow
+  exists to ever score them, so including their weight would permanently
+  under-score any case that uses one) and render on Performance Review as
+  "Awaiting instructor review" — the state the UX spec always called for
+  but nothing produced until now. The evaluation's ceiling is
+  `min(sum of gradable criteria weights, attempt.max_possible_score)`,
+  so a hint-penalized attempt's score is still capped correctly.
+  `DiagnosisSubmissionService` now calls `EvaluationService::evaluate()`
+  synchronously right after submission (`case_attempts.status` reaches
+  `Completed` for the first time, with `completed_at`/`score_earned` set
+  — retroactively fixing the Inbox's average-score/recent-activity
+  widgets, which depended on those columns since Milestone 1 of Phase 5
+  but never had them populated). `PerformanceReviewController` also
+  evaluates on first view if a diagnosis exists without one yet, so
+  every attempt submitted before this milestone shipped gets evaluated
+  the next time its Performance Review is opened, rather than staying
+  stuck showing "pending" forever. A `CaseAttemptCompleted` event fires
+  on completion per the architecture doc's documented extension point,
+  with no listener yet (Analytics is out of this milestone's scope).
+  Bonus side effect: `CaseAttemptService::start()`'s reattempt gate —
+  previously a documented no-op because no attempt ever reached
+  `Completed` — is now live, since attempts actually reach that status.
+- **Phase 6, Milestone 2 — Manual Review:** the instructor review
+  workflow on top of Milestone 1's Evaluation Engine. Two additive
+  migrations — `evaluations` gains `reviewed_at`/`reviewed_by`/
+  `instructor_comment`; `evaluation_criterion_results` gains
+  `instructor_score`/`instructor_comment`. `score_awarded` is never
+  overwritten (it stays the auditable strategy output); `instructor_score`
+  is a nullable override, and `EvaluationCriterionResult::effectiveScore()`
+  is the one place that decides which wins. New `ManualReviewService`
+  persists the instructor's per-criterion scores/comments and calls
+  `EvaluationService::recalculateTotals()` — extracted from Milestone 1's
+  `evaluate()` — so the initial auto-evaluation and a later review recompute
+  the same total through the same code, not two implementations. New
+  `Admin\EvaluationReviewController` (index/edit/update, thin, delegates to
+  the service) behind `EvaluationPolicy` (admin or instructor, unlike
+  case-authoring policies which are admin-only) and a new "Reviews" sidebar
+  link — one new admin page, not a dashboard redesign. `Evaluation::
+  needsInstructorReview()`/`scopeAwaitingInstructorReview()` derive
+  "awaiting review" from existing criterion-result data rather than adding
+  a redundant status column. Performance Review now shows a reviewed
+  criterion's real score/instructor comment instead of the pending state,
+  with the stale "Awaiting instructor review" strategy note suppressed
+  once a score is in. No approved UX spec exists for this screen (the
+  design docs only ever said instructors "may review individual
+  submissions," v1 read-mostly) — built consistent with the existing
+  Admin Console conventions (Bootstrap cards/tables, `layouts.admin`)
+  instead of blocking on a spec that was never produced.
+- **Phase 6, Milestone 3 — Analytics Foundation:** the reusable
+  aggregation layer future dashboards/reports will consume — backend
+  only, no UI. New `AnalyticsService::completionMetrics()`/
+  `scoreDistribution()`/`hintUsage()`/`averageCompletionTime()`/
+  `reattemptStatistics()` compute case-completion rates, score-percentage
+  buckets, hint-unlock totals, average time-to-completion, and
+  re-attempt rates purely from existing `case_attempts`/`evaluations`/
+  `hint_unlocks` data — no new scoring or grading logic. Every method
+  takes the same optional `?array $caseIds` scope (null = platform-wide,
+  one ID = single case, several = a rollup), so `categoryAggregates()`
+  produces category-level numbers by calling the identical `summary()`
+  composition per category's case IDs instead of a separate
+  implementation — satisfies "do not duplicate query logic" by
+  construction rather than by convention. Backing aggregate methods
+  (`statusCounts()`, `scorePercentages()`, `usageCounts()`,
+  `averageCompletionSeconds()`, `reattemptCounts()`) were added to the
+  three repositories that already own this data
+  (`CaseAttemptRepositoryInterface`, `EvaluationRepositoryInterface`,
+  `HintRepositoryInterface`) rather than introducing a new repository —
+  consistent with the architecture doc's rule that only aggregate roots
+  get one. `averageCompletionSeconds()` computes the duration in PHP
+  (Carbon `diffInSeconds`) instead of a raw-SQL `TIMESTAMPDIFF`, so it
+  behaves identically on MySQL (dev/prod) and the SQLite in-memory test
+  database. No controllers, routes, or views were touched.
+- **Phase 6, Milestone 4 — Analytics Dashboard:** the read-only Admin
+  Console page over Milestone 3's `AnalyticsService` — a pure rendering
+  layer, no new queries or calculations. New `Admin\AnalyticsController`
+  (one `index()` action, `$this->authorize('viewAny', CaseModel::class)`
+  reusing `CasePolicy` like `DashboardController` rather than adding a
+  policy for a view with no resource of its own) calls
+  `AnalyticsService::summary()` and `::categoryAggregates()` and hands
+  the arrays straight to the view. The `/admin/analytics` route (gated
+  `role:admin,instructor`, wired since Phase 1 as a placeholder) now
+  points at the controller instead of the placeholder closure. The view
+  covers every metric named in the milestone — completion statistics,
+  score distribution, hint usage, average completion time, re-attempt
+  statistics, and a per-category breakdown table — as Bootstrap 5 stat
+  cards/progress bars/tables matching the existing Dashboard and Manual
+  Review pages' conventions. Hints are labeled by ID ("Hint #5") rather
+  than content, since enriching them would mean a query beyond what
+  `AnalyticsService` already returns. No reporting, export, or AI
+  insights — those stay out of scope for a later milestone.
+- **Roadmap Phase 12, Milestone 1 — Authorization audit:** every route in
+  `routes/web.php` checked against its intended Policy. Every admin
+  write action authorizes either through a `FormRequest::authorize()`
+  delegating to a Policy (`Store`/`Update*Request` classes) or a
+  controller-level `$this->authorize()` call (`destroy`/`publish`/
+  `moveUp`/`moveDown`, which have no FormRequest); every student
+  attempt-scoped route is protected by the `attempt.owner` middleware
+  plus explicit cross-case `abort_unless` checks
+  (`EvidenceController::recordView()`, `Student\HintController::unlock()`).
+  No Policy gaps were found — the audit's actual finding was a test-
+  coverage gap: `CaseManagementTest`, `CategoryManagementTest`,
+  `HintManagementTest`, `RubricCriterionManagementTest`, and
+  `ManualReviewTest` asserted `student`/`instructor` were forbidden on
+  write actions but never asserted a guest is redirected, relying
+  implicitly on the `/admin` route group's `auth` middleware without
+  proving it per controller. Added the missing guest-redirect
+  assertions (12 new tests) so every audited route now has explicit
+  guest/student/instructor(where applicable) coverage rather than
+  inferring it from the route group. No application code changed —
+  audit-only, no new features.
+- **Roadmap Phase 12, Milestone 2 — Validation and error-state audit:**
+  checked every list-bearing/form page against the UI/UX doc's §11
+  checklist ("Empty/loading/error states are designed for every
+  list-bearing page"). Nearly everything already matched the spec
+  (Publish-disabled-with-tooltip, live rubric-weight preview, inline
+  `@error` validation with modal-reopen-on-`old()` across every admin
+  CRUD form, empty states on every table/list, the notebook's existing
+  saved/saving/error-saving indicator). Two real gaps found and fixed,
+  both in the Investigation Workspace's hint-unlock JS
+  (`investigation/show.blade.php`): (1) the `fetch(...).then(r =>
+  r.json())` chain never checked `response.ok`, so a non-2xx response
+  would still be parsed and treated as a successful unlock instead of
+  surfacing an error; (2) a failed unlock silently re-enabled the
+  button with no message, leaving the student unsure what happened.
+  Fixed by checking `response.ok` before parsing and adding a
+  previously-missing error message in the confirm modal, mirroring the
+  error-state pattern the notebook autosave already used. Also added a
+  client-side `maxlength="20000"` to the notebook textarea, mirroring
+  its server-side `max:20000` rule the same way every other form field
+  in the app already mirrors its FormRequest rule as an HTML5
+  attribute — without it, pasting past the limit would 422 on every
+  autosave and the retry loop would spin forever on a permanent
+  failure it could never fix by retrying. No new pages, no new
+  features — validation/error-state fixes only, verified manually by
+  forcing the fetch to fail in-browser and confirming the error message
+  appears and the hint stays locked.
+- **Roadmap Phase 12, Milestone 3 — End-to-end testing:** new
+  `EndToEndWorkflowTest` adds three continuous, HTTP-level tests for the
+  roadmap's named core flows — an admin authoring and publishing a case
+  through every real endpoint (category → case → publish-blocked →
+  hint → rubric → publish-succeeds → visible in the catalog); a student
+  completing a case through every real endpoint (browse → details →
+  start → workspace → evidence view → notes → hint unlock → submit →
+  performance review), asserting the final score correctly composes
+  rubric matching (keyword + evidence-citation, 25 raw) with the hint
+  penalty ceiling (capped to 20); and two students independently
+  completing the same case, asserting neither can reach the other's
+  workspace/notes/review and neither's page leaks the other's name or
+  diagnosis text once both are viewing a real, populated case-average.
+  These complement rather than replace the ~280 existing narrower
+  per-controller tests — nothing else in the suite previously proved
+  that one step's real HTTP response/redirect actually satisfies the
+  next step's precondition across the whole journey. Also added the
+  one genuinely untested `KeywordMatchStrategy` branch (no keywords
+  configured on a criterion → full credit, matching
+  `EvidenceCitationStrategy`'s already-tested empty-required-ids
+  behavior) to `EvaluationEngineTest`. No new features, no unrelated
+  refactoring — evidence authoring still has no admin UI (Phase 7 was
+  never built), so these tests attach evidence via factory like every
+  other test in the suite already does. Full suite: 291/291 passing.
+  Manually re-ran the student-completion flow's service calls directly
+  against the real MySQL dev database (transaction rolled back after)
+  to confirm the score-capping arithmetic matches the SQLite test
+  results exactly.
+- **Roadmap Phase 12, Milestone 4 — Performance optimization & N+1 audit:**
+  measured real query counts (via `DB::enableQueryLog()` against seeded
+  data, scaled up to confirm flat vs. scaling behavior) on every major
+  page — Admin Dashboard, Analytics, Cases index/edit, Categories index,
+  Evaluations index, student Catalog/Dashboard/Workspace/Performance
+  Review. Found and fixed one genuine N+1: `Admin\DashboardController::
+  needsAttention()` called `CaseCatalogService::publishInvariantErrors()`
+  once per draft case, and that method ran 2 queries internally
+  (`->rubricCriteria()->doesntExist()` + `->rubricCriteria()->sum()`) —
+  2N queries that scaled with the number of drafts (measured 18 queries
+  at 5 drafts, still 18 at 15). Fixed by having the service read the
+  `rubricCriteria` relation collection instead of two separate query-
+  builder calls, and eager-loading it once in `needsAttention()`'s
+  query — now flat at 8 queries regardless of draft count (verified at
+  5 and 15). This also incidentally reduced the Case Edit page's query
+  count, since `_rubric.blade.php`'s own `$case->rubricCriteria` access
+  now reuses the same loaded relation instead of a separate lazy query.
+  Also eager-loaded `Category::with('cases:id,category_id')` in
+  `AnalyticsService::categoryAggregates()`, replacing one
+  `->cases()->pluck('id')` query-builder call per category with a
+  single batched query (57 → 51 queries at 5 categories). The remaining
+  per-category cost (`summary()` re-running its 5 scoped metric
+  queries for each category) is an intentional, documented Milestone-3
+  tradeoff — trading query count for zero duplicated aggregation logic
+  across platform/single-case/category scopes — and wasn't touched, since
+  restructuring it into batched cross-category queries would be a
+  substantial rework of that service, not a "safe" optimization, and
+  category counts are small in practice. Every other audited page
+  (Catalog, both Dashboards, Workspace, Case/Categories/Evaluations
+  indexes, Case Edit, Performance Review) was already correctly
+  eager-loaded, confirmed flat under 3x scale-up. Also confirmed every
+  index named in `docs/03-database-design.md` §4 ("Indexing Notes") is
+  already present in the migrations — nothing was missing there.
+  No behavior changes — the two touched methods return identical data,
+  verified by the full suite (unchanged, 291/291 passing) and by
+  re-rendering both fixed pages in-browser against real seeded data to
+  confirm identical output.
+- **Roadmap Phase 12, Milestone 5 — Deployment preparation & production
+  readiness (final roadmap milestone):** `docs/12-deployment-guide.md`
+  covering server requirements, environment configuration, build/deploy
+  steps, and migration/seeding — re-verified for real with a fresh
+  `php artisan migrate:fresh --seed` (23 migrations, zero errors) plus
+  the new `DemoDataSeeder` (three fully-populated, published cases —
+  "API Returning 500 on Checkout," "Login Failures After Password
+  Reset," "Dashboard Queries Timing Out" — confirmed idempotent via a
+  second run producing identical counts). Executed a full manual smoke
+  test as scripted authenticated HTTP requests against a live
+  `php artisan serve` instance (browser automation wasn't available in
+  this environment) covering the complete student journey (register →
+  catalog → case detail → start attempt → workspace → evidence view →
+  notebook autosave → hint unlock → diagnosis submit → scored
+  Performance Review → Work History) and admin journey (login →
+  Dashboard → Cases → Categories → Analytics → Evaluations manual-review
+  queue → opened and saved a manual review), plus guest-redirect
+  negative checks — 25/25 checks passed, no application code changed to
+  make it pass (three script mistakes were corrected against the real
+  route/JS/request-field names instead). Added an explicit Production
+  Deployment Checklist and Release Checklist to the deployment guide.
+  No business-logic changes; full suite unchanged at 291/291 passing.
 
 ### Known issues
 
