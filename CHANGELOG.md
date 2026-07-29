@@ -242,6 +242,24 @@ the first release is tagged.
   (Carbon `diffInSeconds`) instead of a raw-SQL `TIMESTAMPDIFF`, so it
   behaves identically on MySQL (dev/prod) and the SQLite in-memory test
   database. No controllers, routes, or views were touched.
+- **Phase 6, Milestone 4 — Analytics Dashboard:** the read-only Admin
+  Console page over Milestone 3's `AnalyticsService` — a pure rendering
+  layer, no new queries or calculations. New `Admin\AnalyticsController`
+  (one `index()` action, `$this->authorize('viewAny', CaseModel::class)`
+  reusing `CasePolicy` like `DashboardController` rather than adding a
+  policy for a view with no resource of its own) calls
+  `AnalyticsService::summary()` and `::categoryAggregates()` and hands
+  the arrays straight to the view. The `/admin/analytics` route (gated
+  `role:admin,instructor`, wired since Phase 1 as a placeholder) now
+  points at the controller instead of the placeholder closure. The view
+  covers every metric named in the milestone — completion statistics,
+  score distribution, hint usage, average completion time, re-attempt
+  statistics, and a per-category breakdown table — as Bootstrap 5 stat
+  cards/progress bars/tables matching the existing Dashboard and Manual
+  Review pages' conventions. Hints are labeled by ID ("Hint #5") rather
+  than content, since enriching them would mean a query beyond what
+  `AnalyticsService` already returns. No reporting, export, or AI
+  insights — those stay out of scope for a later milestone.
 
 ### Known issues
 
