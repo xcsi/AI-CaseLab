@@ -2,7 +2,7 @@
 
 **An Interactive Software Engineering Training Platform** — a virtual engineering office where students investigate realistic production incidents (login failures, API 500s, database performance issues, payment failures) using support tickets, logs, code, and data, instead of reading theory.
 
-> **Status:** Design phase complete. Implementation in progress — see [Roadmap](#roadmap) below.
+> **Status:** All 12 roadmap phases complete. Full student and admin journeys work end to end against real data; 291 automated tests passing; deployment-ready (see [`docs/12-deployment-guide.md`](docs/12-deployment-guide.md)). See [Roadmap](#roadmap) below and the `[Unreleased]` section of [`CHANGELOG.md`](CHANGELOG.md) for the complete build history.
 
 ## Why This Exists
 
@@ -48,24 +48,41 @@ All design and process documentation lives in [`docs/`](docs) and is the source 
 
 | Phase | Name | Status |
 |---|---|---|
-| 1 | Laravel Project Setup | Not started |
-| 2 | Authentication & Roles | Not started |
-| 3 | Database Schema & Models | Not started |
-| 4 | Admin CMS | Not started |
-| 5 | Student Engineering Office | Not started |
-| 6 | Incident Investigation Workspace | Not started |
-| 7 | Evidence Management | Not started |
-| 8 | Investigation Notes | Not started |
-| 9 | Diagnosis Submission | Not started |
-| 10 | Evaluation Engine | Not started |
-| 11 | Analytics & Performance Dashboard | Not started |
-| 12 | Testing & Deployment | Not started |
+| 1 | Laravel Project Setup | Done |
+| 2 | Authentication & Roles | Done |
+| 3 | Database Schema & Models | Done |
+| 4 | Admin CMS | Done |
+| 5 | Student Engineering Office | Done |
+| 6 | Incident Investigation Workspace | Done |
+| 7 | Evidence Management | Done (student-facing viewers only — see note below) |
+| 8 | Investigation Notes | Done |
+| 9 | Diagnosis Submission | Done |
+| 10 | Evaluation Engine | Done |
+| 11 | Analytics & Performance Dashboard | Done |
+| 12 | Testing & Deployment | Done |
+
+**Note on Phase 7:** the student-facing evidence viewers (log, code, DB snapshot, API response, screenshot) are fully built. The admin authoring UI for evidence was a deliberate scope trade-off and was not built — evidence exists via seeders (see `DemoDataSeeder`) rather than a CMS form. This is a documented, known limitation, not an oversight; see `docs/12-deployment-guide.md` §5.
 
 Full detail (objectives, dependencies, deliverables) for each phase is in [`docs/07-implementation-roadmap.md`](docs/07-implementation-roadmap.md).
 
 ## Getting Started
 
-Setup instructions will be added here once Phase 1 (Laravel Project Setup) is complete.
+Requirements: PHP 8.2+, Composer, Node.js/npm, MySQL 8 (or a wire-compatible MariaDB).
+
+```bash
+composer install
+npm install
+cp .env.example .env
+php artisan key:generate
+# create the database named in DB_DATABASE, then:
+php artisan migrate --seed
+npm run build   # or: npm run dev
+php artisan serve
+```
+
+The seeders create the three roles (`student`, `instructor`, `admin`) and one
+local-development admin account: `admin@aicaselab.test` / `password` (never
+created outside a non-production environment).
 
 ## Contributing
 

@@ -1,0 +1,171 @@
+@php
+    $case = $attempt->case;
+    $evaluation = $attempt->evaluation;
+    $hasEvaluation = $evaluation !== null;
+
+    $scorePercent = $hasEvaluation && $evaluation->max_score > 0
+        ? round($evaluation->total_score / $evaluation->max_score * 100)
+        : null;
+
+    $scoreBadge = fn (float $percent) => \App\Support\Badge::score($percent);
+
+    $criterionState = function ($result) {
+        if ($result->isPendingManualReview()) {
+            return ['icon' => '&hellip;', 'class' => 'text-secondary', 'pending' => true];
+        }
+
+        $score = $result->effectiveScore();
+
+        if ($result->max_score > 0 && $score >= $result->max_score) {
+            return ['icon' => '&check;', 'class' => 'text-success'];
+        }
+
+        if ($score <= 0) {
+            return ['icon' => '&#10007;', 'class' => 'text-danger'];
+        }
+
+        return ['icon' => '&#9680;', 'class' => 'text-warning'];
+    };
+
+    $pendingManualReviewCount = $evaluation?->metadata['pending_manual_review_count'] ?? 0;
+
+    $canReattempt = $case->allow_reattempt;
+
+    $formatScore = fn ($value) => \App\Support\ScoreFormatter::trim($value);
+@endphp
+
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="fs-4 fw-semibold mb-0">Performance Review</h2>
+        <div class="text-secondary small mt-1">{{ $case->title }}</div>
+    </x-slot>
+
+    <div class="container py-4 pb-5">
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        @if ($hasEvaluation)
+                            <div class="d-flex flex-wrap align-items-baseline gap-3">
+                                <span style="font-size: 2rem;" class="fw-bold">
+                                    {{ $formatScore($evaluation->total_score) }} / {{ $formatScore($evaluation->max_score) }}
+                                </span>
+                                @if ($scorePercent !== null)
+                                    <span class="badge {{ $scoreBadge($scorePercent) }}">{{ $scorePercent }}%</span>
+                                @endif
+                            </div>
+                            @if ($caseAverageScore !== null)
+                                <div class="text-secondary small mt-1">
+                                    {{ $evaluation->total_score >= $caseAverageScore ? 'Above' : 'Below' }}
+                                    case average ({{ $formatScore($caseAverageScore) }})
+                                </div>
+                            @endif
+                            @if ($evaluation->feedback_summary)
+                                <p class="mb-0 mt-2">{{ $evaluation->feedback_summary }}</p>
+                            @endif
+                            @if ($pendingManualReviewCount > 0)
+                                <p class="text-secondary small mb-0 mt-2">
+                                    {{ $pendingManualReviewCount }} {{ Str::plural('criterion', $pendingManualReviewCount) }}
+                                    awaiting instructor review &mdash; not included in this score yet.
+                                </p>
+                            @endif
+                            @if ($evaluation->reviewed_at)
+                                <p class="text-secondary small mb-0 mt-2">
+                                    Reviewed by an instructor {{ $evaluation->reviewed_at->diffForHumans() }}.
+                                </p>
+                            @endif
+                            @if ($evaluation->instructor_comment)
+                                <p class="mb-0 mt-2"><strong>Instructor feedback:</strong> {{ $evaluation->instructor_comment }}</p>
+                            @endif
+                        @else
+                            <p class="text-secondary mb-0">
+                                Diagnosis submitted &mdash; evaluation is still pending. Check back soon for your score and feedback.
+                            </p>
+                        @endif
+                    </div>
+                </div>
+
+                @if ($hasEvaluation && $evaluation->criterionResults->isNotEmpty())
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header fw-semibold">Per-Criterion Breakdown</div>
+                        <div class="card-body">
+                            @foreach ($evaluation->criterionResults as $result)
+                                @php $state = $criterionState($result); @endphp
+                                <div class="py-2 {{ ! $loop->last ? 'border-bottom' : '' }}">
+                                    <div class="d-flex justify-content-between align-items-start gap-3">
+                                        <div class="d-flex gap-2">
+                                            <span class="{{ $state['class'] }}" aria-hidden="true">{!! $state['icon'] !!}</span>
+                                            <span>{{ $result->rubricCriterion->title }}</span>
+                                        </div>
+                                        <span class="text-secondary text-nowrap">
+                                            @if ($state['pending'] ?? false)
+                                                &mdash; / {{ $formatScore($result->max_score) }}
+                                            @else
+                                                {{ $formatScore($result->effectiveScore()) }} / {{ $formatScore($result->max_score) }}
+                                            @endif
+                                        </span>
+                                    </div>
+                                    @php
+                                        // Once a manual-review criterion has been scored, the strategy's
+                                        // stub note ("Awaiting instructor review.") is stale — the
+                                        // instructor's own comment below supersedes it.
+                                        $wasManualAndNowReviewed = ($result->metadata['pending_manual_review'] ?? false) && $result->instructor_score !== null;
+                                    @endphp
+                                    @if ($result->feedback_text && ! $wasManualAndNowReviewed)
+                                        <p class="text-secondary small mb-0 mt-1">{{ $result->feedback_text }}</p>
+                                    @endif
+                                    @if ($result->instructor_comment)
+                                        <p class="text-secondary small mb-0 mt-1">
+                                            <strong>Instructor note:</strong> {{ $result->instructor_comment }}
+                                        </p>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header fw-semibold">What Actually Happened</div>
+                    <div class="card-body">
+                        @if ($case->model_solution_summary)
+                            <p class="mb-0" style="white-space: pre-line;">{{ $case->model_solution_summary }}</p>
+                        @else
+                            <p class="text-secondary mb-0">No model solution summary has been added for this incident.</p>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="d-none d-lg-flex flex-column gap-2">
+                    <a href="{{ route('cases.index') }}" class="btn btn-outline-secondary w-100">Back to Incidents</a>
+                    @if ($canReattempt)
+                        <form method="POST" action="{{ route('attempts.store', $case) }}">
+                            @csrf
+                            <button type="submit" class="btn btn-primary w-100">Re-attempt</button>
+                        </form>
+                    @else
+                        <button type="button" class="btn btn-outline-secondary w-100" disabled title="This incident does not allow reattempts.">
+                            Re-attempt
+                        </button>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-lg-none position-sticky bottom-0 bg-white border-top p-3 d-flex gap-2">
+        <a href="{{ route('cases.index') }}" class="btn btn-outline-secondary w-100">Back to Incidents</a>
+        @if ($canReattempt)
+            <form method="POST" action="{{ route('attempts.store', $case) }}" class="w-100">
+                @csrf
+                <button type="submit" class="btn btn-primary w-100">Re-attempt</button>
+            </form>
+        @else
+            <button type="button" class="btn btn-outline-secondary w-100" disabled title="This incident does not allow reattempts.">
+                Re-attempt
+            </button>
+        @endif
+    </div>
+</x-app-layout>

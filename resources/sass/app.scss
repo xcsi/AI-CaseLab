@@ -1,0 +1,299 @@
+@import "variables";
+@import "bootstrap/scss/bootstrap";
+
+// Bootstrap's utilities API ships min-vw-100/min-vh-100 but no generic
+// min-width/min-height utilities (that's a Tailwind convention, not
+// Bootstrap's) — the workspace flex layout depends on min-w-0/min-h-0 to let
+// truncating text and scrolling panes shrink below their content size, so
+// they're defined here for real.
+.min-w-0 {
+    min-width: 0 !important;
+}
+
+.min-h-0 {
+    min-height: 0 !important;
+}
+
+// Engineering Office shell: active nav item reads as underlined + bold,
+// not a filled pill — keeps the primary nav calm (docs/09 UX spec, Shell).
+.navbar-nav .nav-link.active {
+    font-weight: 600;
+    border-bottom: 2px solid $primary;
+}
+
+// Investigation Workspace — Evidence Explorer & Viewer (Milestone 2).
+// Dark, monospace evidence panels are deliberate — the UI/UX doc calls for
+// a "developer tool visual tone" so evidence reads as authentic engineering
+// work, not a quiz app.
+.evidence-explorer-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 0.4rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+
+    &:hover,
+    &.active {
+        background: $gray-100;
+    }
+}
+
+.evidence-explorer-ticket {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.evidence-explorer-group {
+    margin-top: 0.75rem;
+}
+
+.evidence-explorer-group-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: $gray-500;
+    padding: 0 0.5rem;
+    margin-bottom: 0.15rem;
+}
+
+.evidence-viewed-check {
+    color: $success;
+    font-weight: 700;
+    width: 1em;
+}
+
+.evidence-tab-bar {
+    min-height: 2.5rem;
+}
+
+.evidence-tab-button {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.82rem;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+
+    &.active {
+        border-bottom-color: $primary;
+        font-weight: 600;
+    }
+}
+
+.evidence-tab-select {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+}
+
+.evidence-tab-close {
+    background: none;
+    border: none;
+    padding: 0 0.2rem;
+    color: $gray-500;
+    line-height: 1;
+
+    &:hover {
+        color: $danger;
+    }
+}
+
+.evidence-log-viewer,
+.evidence-code-header,
+.evidence-code-body,
+.evidence-json-body {
+    background: #1e1e2e;
+    color: #d4d4e0;
+    font-family: var(--bs-font-monospace);
+}
+
+.evidence-log-viewer {
+    border-radius: 6px;
+    padding: 0.75rem;
+    font-size: 0.8rem;
+}
+
+.evidence-log-body {
+    max-height: 60vh;
+    overflow: auto;
+}
+
+.evidence-log-line {
+    white-space: pre-wrap;
+    word-break: break-word;
+    padding: 0.1rem 0;
+}
+
+.evidence-log-timestamp {
+    color: #8890a6;
+    margin-right: 0.5rem;
+}
+
+.evidence-log-level-tag {
+    display: inline-block;
+    min-width: 3.2em;
+    margin-right: 0.5rem;
+    font-weight: 700;
+}
+
+.evidence-log-level-error .evidence-log-level-tag {
+    color: #ff6b6b;
+}
+
+.evidence-log-level-warn .evidence-log-level-tag {
+    color: #f0b429;
+}
+
+.evidence-log-level-info .evidence-log-level-tag {
+    color: #8890a6;
+}
+
+.evidence-code-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px 6px 0 0;
+    font-size: 0.8rem;
+}
+
+.evidence-code-body {
+    padding: 0.75rem;
+    border-radius: 0 0 6px 6px;
+    font-size: 0.8rem;
+    overflow: auto;
+    max-height: 60vh;
+}
+
+.evidence-code-line {
+    display: block;
+    padding: 0 0.5rem;
+}
+
+.evidence-code-line-highlight {
+    background: rgba(255, 214, 79, 0.15);
+    border-left: 2px solid #ffd64f;
+}
+
+.evidence-json-body {
+    padding: 0.75rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    overflow: auto;
+    max-height: 40vh;
+}
+
+.evidence-screenshot-frame {
+    background: $gray-100;
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 120px;
+}
+
+.evidence-screenshot-image {
+    max-width: 100%;
+    cursor: zoom-in;
+    transition: filter 0.2s ease;
+}
+
+.evidence-screenshot-loading {
+    filter: blur(8px);
+}
+
+.evidence-screenshot-error {
+    display: none;
+}
+
+// Engineering Notebook (Milestone 3).
+.evidence-notebook-textarea {
+    border: none;
+    border-radius: 0;
+    resize: none;
+    box-shadow: none !important;
+}
+
+.evidence-notebook-reopen {
+    writing-mode: vertical-rl;
+    padding: 0.75rem 0.4rem;
+}
+
+// Hint Unlocking (Milestone 4).
+.hints-group {
+    margin-top: 1rem;
+    border-top: 1px solid $gray-200;
+    padding-top: 0.5rem;
+}
+
+.hint-row {
+    padding: 0.3rem 0.5rem;
+    border-radius: 4px;
+
+    & + .hint-row {
+        margin-top: 0.15rem;
+    }
+}
+
+.hint-unlock-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 0.1rem 0;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: $gray-600;
+    cursor: pointer;
+
+    &:hover {
+        color: $body-color;
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: default;
+    }
+}
+
+.hint-lock-icon {
+    font-size: 0.8rem;
+}
+
+.hint-row-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.hint-check {
+    color: $success;
+    font-weight: 700;
+}
+
+.hint-penalty-chip {
+    font-weight: 500;
+}
+
+.hint-row-unlocked .hint-penalty-chip {
+    margin-left: auto;
+}
+
+.hint-content {
+    margin-top: 0.25rem;
+    padding-left: 1.6rem;
+}

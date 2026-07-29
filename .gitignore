@@ -32,6 +32,7 @@ auth.json
 !/storage/framework/views/.gitkeep
 /storage/logs/*
 !/storage/logs/.gitkeep
+/storage/pail
 /.phpunit.cache
 /.phpunit.result.cache
 
