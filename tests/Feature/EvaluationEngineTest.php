@@ -274,4 +274,81 @@ class EvaluationEngineTest extends TestCase
 
         $this->assertSame(15.0, (float) $evaluation->total_score);
     }
+
+    // --- Manual review model/service helpers -----------------------------------
+
+    public function test_needs_instructor_review_is_true_until_the_pending_criterion_is_scored(): void
+    {
+        $case = CaseModel::factory()->create();
+        RubricCriterion::factory()->create(['case_id' => $case->id, 'weight' => 10, 'matching_type' => 'manual', 'expected_data' => []]);
+        $attempt = CaseAttempt::factory()->create(['case_id' => $case->id]);
+        $diagnosis = Diagnosis::factory()->create(['case_attempt_id' => $attempt->id]);
+
+        $evaluation = app(EvaluationService::class)->evaluate($attempt, $diagnosis);
+        $this->assertTrue($evaluation->fresh(['criterionResults'])->needsInstructorReview());
+
+        $result = $evaluation->criterionResults->first();
+        $result->update(['instructor_score' => 5]);
+
+        $this->assertFalse($evaluation->fresh(['criterionResults'])->needsInstructorReview());
+    }
+
+    public function test_awaiting_instructor_review_scope_matches_needs_instructor_review(): void
+    {
+        $case = CaseModel::factory()->create();
+        RubricCriterion::factory()->create(['case_id' => $case->id, 'weight' => 10, 'matching_type' => 'manual', 'expected_data' => []]);
+        $attempt = CaseAttempt::factory()->create(['case_id' => $case->id]);
+        $diagnosis = Diagnosis::factory()->create(['case_attempt_id' => $attempt->id]);
+        $evaluation = app(EvaluationService::class)->evaluate($attempt, $diagnosis);
+
+        $this->assertTrue(\App\Models\Evaluation::awaitingInstructorReview()->whereKey($evaluation->id)->exists());
+
+        $evaluation->criterionResults->first()->update(['instructor_score' => 5]);
+
+        $this->assertFalse(\App\Models\Evaluation::awaitingInstructorReview()->whereKey($evaluation->id)->exists());
+    }
+
+    public function test_manual_review_service_recalculates_a_mixed_evaluation_after_review(): void
+    {
+        $case = CaseModel::factory()->create();
+        RubricCriterion::factory()->create([
+            'case_id' => $case->id,
+            'weight' => 20,
+            'matching_type' => 'keyword',
+            'expected_data' => ['keywords' => ['timeout']],
+        ]);
+        RubricCriterion::factory()->create([
+            'case_id' => $case->id,
+            'weight' => 30,
+            'matching_type' => 'manual',
+            'expected_data' => [],
+        ]);
+        $attempt = CaseAttempt::factory()->create(['case_id' => $case->id, 'max_possible_score' => 50]);
+        $diagnosis = Diagnosis::factory()->create([
+            'case_attempt_id' => $attempt->id,
+            'root_cause_text' => 'A timeout on the upstream service.',
+        ]);
+        $evaluation = app(EvaluationService::class)->evaluate($attempt, $diagnosis);
+        // Before review: only the keyword criterion (20/20) counts.
+        $this->assertSame(20.0, (float) $evaluation->total_score);
+        $this->assertSame(20.0, (float) $evaluation->max_score);
+
+        $manualResult = $evaluation->criterionResults->first(
+            fn ($result) => $result->rubricCriterion->matching_type === \App\Enums\MatchingType::Manual
+        );
+        $reviewer = \App\Models\User::factory()->withRole(\App\Enums\UserRole::Instructor)->create();
+
+        $reviewed = app(\App\Services\ManualReviewService::class)->submitReview(
+            $evaluation,
+            $reviewer,
+            [$manualResult->id => ['score' => 20, 'comment' => 'Reasonable given the ticket.']],
+            'Overall solid.',
+        );
+
+        $this->assertSame(40.0, (float) $reviewed->total_score);
+        $this->assertSame(50.0, (float) $reviewed->max_score);
+        $this->assertEquals($reviewer->id, $reviewed->reviewed_by);
+        $this->assertSame('Overall solid.', $reviewed->instructor_comment);
+        $this->assertEquals(40.0, $attempt->fresh()->score_earned);
+    }
 }
