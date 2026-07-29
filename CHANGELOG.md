@@ -280,6 +280,32 @@ the first release is tagged.
   guest/student/instructor(where applicable) coverage rather than
   inferring it from the route group. No application code changed —
   audit-only, no new features.
+- **Roadmap Phase 12, Milestone 2 — Validation and error-state audit:**
+  checked every list-bearing/form page against the UI/UX doc's §11
+  checklist ("Empty/loading/error states are designed for every
+  list-bearing page"). Nearly everything already matched the spec
+  (Publish-disabled-with-tooltip, live rubric-weight preview, inline
+  `@error` validation with modal-reopen-on-`old()` across every admin
+  CRUD form, empty states on every table/list, the notebook's existing
+  saved/saving/error-saving indicator). Two real gaps found and fixed,
+  both in the Investigation Workspace's hint-unlock JS
+  (`investigation/show.blade.php`): (1) the `fetch(...).then(r =>
+  r.json())` chain never checked `response.ok`, so a non-2xx response
+  would still be parsed and treated as a successful unlock instead of
+  surfacing an error; (2) a failed unlock silently re-enabled the
+  button with no message, leaving the student unsure what happened.
+  Fixed by checking `response.ok` before parsing and adding a
+  previously-missing error message in the confirm modal, mirroring the
+  error-state pattern the notebook autosave already used. Also added a
+  client-side `maxlength="20000"` to the notebook textarea, mirroring
+  its server-side `max:20000` rule the same way every other form field
+  in the app already mirrors its FormRequest rule as an HTML5
+  attribute — without it, pasting past the limit would 422 on every
+  autosave and the retry loop would spin forever on a permanent
+  failure it could never fix by retrying. No new pages, no new
+  features — validation/error-state fixes only, verified manually by
+  forcing the fetch to fail in-browser and confirming the error message
+  appears and the hint stays locked.
 
 ### Known issues
 
