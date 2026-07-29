@@ -10,6 +10,10 @@
     $scoreBadge = fn (float $percent) => \App\Support\Badge::score($percent);
 
     $criterionState = function ($result) {
+        if ($result->metadata['pending_manual_review'] ?? false) {
+            return ['icon' => '&hellip;', 'class' => 'text-secondary', 'pending' => true];
+        }
+
         if ($result->max_score > 0 && $result->score_awarded >= $result->max_score) {
             return ['icon' => '&check;', 'class' => 'text-success'];
         }
@@ -20,6 +24,8 @@
 
         return ['icon' => '&#9680;', 'class' => 'text-warning'];
     };
+
+    $pendingManualReviewCount = $evaluation?->metadata['pending_manual_review_count'] ?? 0;
 
     $canReattempt = $case->allow_reattempt;
 
@@ -42,13 +48,24 @@
                                 <span style="font-size: 2rem;" class="fw-bold">
                                     {{ $formatScore($evaluation->total_score) }} / {{ $formatScore($evaluation->max_score) }}
                                 </span>
-                                <span class="badge {{ $scoreBadge($scorePercent) }}">{{ $scorePercent }}%</span>
+                                @if ($scorePercent !== null)
+                                    <span class="badge {{ $scoreBadge($scorePercent) }}">{{ $scorePercent }}%</span>
+                                @endif
                             </div>
                             @if ($caseAverageScore !== null)
                                 <div class="text-secondary small mt-1">
                                     {{ $evaluation->total_score >= $caseAverageScore ? 'Above' : 'Below' }}
                                     case average ({{ $formatScore($caseAverageScore) }})
                                 </div>
+                            @endif
+                            @if ($evaluation->feedback_summary)
+                                <p class="mb-0 mt-2">{{ $evaluation->feedback_summary }}</p>
+                            @endif
+                            @if ($pendingManualReviewCount > 0)
+                                <p class="text-secondary small mb-0 mt-2">
+                                    {{ $pendingManualReviewCount }} {{ Str::plural('criterion', $pendingManualReviewCount) }}
+                                    awaiting instructor review &mdash; not included in this score yet.
+                                </p>
                             @endif
                         @else
                             <p class="text-secondary mb-0">
@@ -58,7 +75,7 @@
                     </div>
                 </div>
 
-                @if ($hasEvaluation)
+                @if ($hasEvaluation && $evaluation->criterionResults->isNotEmpty())
                     <div class="card shadow-sm mb-4">
                         <div class="card-header fw-semibold">Per-Criterion Breakdown</div>
                         <div class="card-body">
@@ -71,7 +88,11 @@
                                             <span>{{ $result->rubricCriterion->title }}</span>
                                         </div>
                                         <span class="text-secondary text-nowrap">
-                                            {{ $formatScore($result->score_awarded) }} / {{ $formatScore($result->max_score) }}
+                                            @if ($state['pending'] ?? false)
+                                                &mdash; / {{ $formatScore($result->max_score) }}
+                                            @else
+                                                {{ $formatScore($result->score_awarded) }} / {{ $formatScore($result->max_score) }}
+                                            @endif
                                         </span>
                                     </div>
                                     @if ($result->feedback_text)

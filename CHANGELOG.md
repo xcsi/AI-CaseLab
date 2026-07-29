@@ -161,6 +161,37 @@ the first release is tagged.
   literal (defense-in-depth against a stored-XSS vector if that title
   ever contains markup). Removed a dead-code ternary in the same file
   whose two branches were identical.
+- **Phase 6, Milestone 1 — Evaluation Engine (Core):** the Strategy
+  pattern from `docs/04-architecture.md` (`EvaluationStrategyInterface` +
+  `KeywordMatchStrategy`/`EvidenceCitationStrategy`/`ManualReviewStrategy`
+  + `EvaluationStrategyResolver`) plus `EvaluationService::evaluate()`,
+  which iterates a case's existing `rubric_criteria`, scores each against
+  its own already-defined `expected_data` (keyword list or required
+  evidence IDs — no new scoring rules introduced), and persists
+  `evaluations`/`evaluation_criterion_results`. Keyword/citation credit
+  is proportional (matched ÷ required × weight); manual-review criteria
+  are recorded but excluded from the total/max (no instructor workflow
+  exists to ever score them, so including their weight would permanently
+  under-score any case that uses one) and render on Performance Review as
+  "Awaiting instructor review" — the state the UX spec always called for
+  but nothing produced until now. The evaluation's ceiling is
+  `min(sum of gradable criteria weights, attempt.max_possible_score)`,
+  so a hint-penalized attempt's score is still capped correctly.
+  `DiagnosisSubmissionService` now calls `EvaluationService::evaluate()`
+  synchronously right after submission (`case_attempts.status` reaches
+  `Completed` for the first time, with `completed_at`/`score_earned` set
+  — retroactively fixing the Inbox's average-score/recent-activity
+  widgets, which depended on those columns since Milestone 1 of Phase 5
+  but never had them populated). `PerformanceReviewController` also
+  evaluates on first view if a diagnosis exists without one yet, so
+  every attempt submitted before this milestone shipped gets evaluated
+  the next time its Performance Review is opened, rather than staying
+  stuck showing "pending" forever. A `CaseAttemptCompleted` event fires
+  on completion per the architecture doc's documented extension point,
+  with no listener yet (Analytics is out of this milestone's scope).
+  Bonus side effect: `CaseAttemptService::start()`'s reattempt gate —
+  previously a documented no-op because no attempt ever reached
+  `Completed` — is now live, since attempts actually reach that status.
 
 ### Known issues
 
