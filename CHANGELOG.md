@@ -218,6 +218,30 @@ the first release is tagged.
   submissions," v1 read-mostly) — built consistent with the existing
   Admin Console conventions (Bootstrap cards/tables, `layouts.admin`)
   instead of blocking on a spec that was never produced.
+- **Phase 6, Milestone 3 — Analytics Foundation:** the reusable
+  aggregation layer future dashboards/reports will consume — backend
+  only, no UI. New `AnalyticsService::completionMetrics()`/
+  `scoreDistribution()`/`hintUsage()`/`averageCompletionTime()`/
+  `reattemptStatistics()` compute case-completion rates, score-percentage
+  buckets, hint-unlock totals, average time-to-completion, and
+  re-attempt rates purely from existing `case_attempts`/`evaluations`/
+  `hint_unlocks` data — no new scoring or grading logic. Every method
+  takes the same optional `?array $caseIds` scope (null = platform-wide,
+  one ID = single case, several = a rollup), so `categoryAggregates()`
+  produces category-level numbers by calling the identical `summary()`
+  composition per category's case IDs instead of a separate
+  implementation — satisfies "do not duplicate query logic" by
+  construction rather than by convention. Backing aggregate methods
+  (`statusCounts()`, `scorePercentages()`, `usageCounts()`,
+  `averageCompletionSeconds()`, `reattemptCounts()`) were added to the
+  three repositories that already own this data
+  (`CaseAttemptRepositoryInterface`, `EvaluationRepositoryInterface`,
+  `HintRepositoryInterface`) rather than introducing a new repository —
+  consistent with the architecture doc's rule that only aggregate roots
+  get one. `averageCompletionSeconds()` computes the duration in PHP
+  (Carbon `diffInSeconds`) instead of a raw-SQL `TIMESTAMPDIFF`, so it
+  behaves identically on MySQL (dev/prod) and the SQLite in-memory test
+  database. No controllers, routes, or views were touched.
 
 ### Known issues
 
