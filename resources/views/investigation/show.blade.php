@@ -5,7 +5,7 @@
     $evidenceViewedCount = $viewedEvidenceItemIds->count();
     $orderedHints = $case->hints->sortBy('order_index')->values();
 
-    $formatPenalty = fn ($value) => rtrim(rtrim(number_format((float) $value, 2), '0'), '.');
+    $formatPenalty = fn ($value) => \App\Support\ScoreFormatter::trim($value);
 @endphp
 
 <x-workspace-layout
@@ -268,8 +268,21 @@
                     const tab = document.createElement('div');
                     tab.className = 'evidence-tab-button';
                     tab.dataset.tabId = id;
-                    tab.innerHTML = `<button type="button" class="evidence-tab-select">${pane.dataset.title}</button>`
-                        + `<button type="button" class="evidence-tab-close" aria-label="Close tab">&times;</button>`;
+
+                    // Built via textContent, not innerHTML, since the title
+                    // is evidence-item data rather than a static string.
+                    const selectButton = document.createElement('button');
+                    selectButton.type = 'button';
+                    selectButton.className = 'evidence-tab-select';
+                    selectButton.textContent = pane.dataset.title;
+
+                    const closeButton = document.createElement('button');
+                    closeButton.type = 'button';
+                    closeButton.className = 'evidence-tab-close';
+                    closeButton.setAttribute('aria-label', 'Close tab');
+                    closeButton.innerHTML = '&times;';
+
+                    tab.append(selectButton, closeButton);
                     document.getElementById('evidence-tab-bar').appendChild(tab);
                 }
 
@@ -429,8 +442,7 @@
             let pendingHintButton = null;
 
             function formatPenaltyDisplay(value) {
-                const num = parseFloat(value);
-                return Number.isInteger(num) ? String(num) : String(num);
+                return String(parseFloat(value));
             }
 
             document.querySelectorAll('.hint-unlock-btn').forEach((button) => {

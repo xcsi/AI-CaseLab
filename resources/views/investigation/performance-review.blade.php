@@ -7,11 +7,7 @@
         ? round($evaluation->total_score / $evaluation->max_score * 100)
         : null;
 
-    $scoreBadge = fn (float $percent) => match (true) {
-        $percent < 50 => 'text-bg-danger',
-        $percent < 75 => 'text-bg-warning',
-        default => 'text-bg-success',
-    };
+    $scoreBadge = fn (float $percent) => \App\Support\Badge::score($percent);
 
     $criterionState = function ($result) {
         if ($result->max_score > 0 && $result->score_awarded >= $result->max_score) {
@@ -27,7 +23,7 @@
 
     $canReattempt = $case->allow_reattempt;
 
-    $formatScore = fn ($value) => rtrim(rtrim(number_format((float) $value, 2), '0'), '.');
+    $formatScore = fn ($value) => \App\Support\ScoreFormatter::trim($value);
 @endphp
 
 <x-app-layout>

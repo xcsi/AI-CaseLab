@@ -7,18 +7,8 @@
         default => 'Good evening',
     };
 
-    $difficultyBadge = fn ($difficulty) => match ($difficulty) {
-        App\Enums\CaseDifficulty::Easy => 'text-bg-success',
-        App\Enums\CaseDifficulty::Medium => 'text-bg-warning',
-        App\Enums\CaseDifficulty::Hard => 'text-bg-danger',
-        default => 'text-bg-secondary',
-    };
-
-    $scoreBadge = fn (float $percent) => match (true) {
-        $percent < 50 => 'text-bg-danger',
-        $percent < 75 => 'text-bg-warning',
-        default => 'text-bg-success',
-    };
+    $difficultyBadge = fn ($difficulty) => \App\Support\Badge::difficulty($difficulty);
+    $scoreBadge = fn (float $percent) => \App\Support\Badge::score($percent);
 @endphp
 
 <x-app-layout>

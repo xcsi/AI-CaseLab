@@ -1,10 +1,5 @@
 @php
-    $difficultyBadge = fn ($difficulty) => match ($difficulty) {
-        App\Enums\CaseDifficulty::Easy => 'text-bg-success',
-        App\Enums\CaseDifficulty::Medium => 'text-bg-warning',
-        App\Enums\CaseDifficulty::Hard => 'text-bg-danger',
-        default => 'text-bg-secondary',
-    };
+    $difficultyBadge = fn ($difficulty) => \App\Support\Badge::difficulty($difficulty);
 
     $priorityLabel = match ($case->difficulty) {
         App\Enums\CaseDifficulty::Easy => 'Low',

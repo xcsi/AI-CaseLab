@@ -6,7 +6,7 @@
     $minutesSpent = (int) $attempt->started_at->diffInMinutes(now());
     $citedIds = old('cited_evidence_ids', $viewedEvidenceItemIds->all());
 
-    $formatPenalty = fn ($value) => rtrim(rtrim(number_format((float) $value, 2), '0'), '.');
+    $formatPenalty = fn ($value) => \App\Support\ScoreFormatter::trim($value);
 @endphp
 
 <!DOCTYPE html>
