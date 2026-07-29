@@ -135,6 +135,32 @@ the first release is tagged.
   case-versioning; added a new `activity_log` table for admin/system
   audit trail. `docs/04-architecture.md` updated to list `ActivityLog`
   and `ActivityLogService`.
+- **Phase 5 architectural review** (post-Milestone 7, no behavior change):
+  full pass over every controller/service/view added across Milestones
+  1–7 against SOLID, reusability, route organization, repository usage,
+  security, and responsive-behavior criteria — verified via the full test
+  suite (222/222 passing before and after) and an identical route table.
+  Extracted `App\Support\Badge` (difficulty/score badge classes, was
+  duplicated across 4 view files) and `App\Support\ScoreFormatter`
+  (trimmed-decimal display, was duplicated across 3 view files).
+  `CaseAttemptController`, `DiagnosisController`, and `CaseCatalogController`
+  now query attempt-scoped data through `CaseAttempt`'s existing
+  `evidenceViews()`/`hintUnlocks()` relations and `CaseModel::attempts()`
+  instead of raw `where('case_attempt_id', ...)`/`where('case_id', ...)`
+  lookups. `CaseAttemptService`, `HintUnlockService`, and
+  `DiagnosisSubmissionService` now route their `CaseAttempt`/`Diagnosis`
+  writes through the existing `CaseAttemptRepositoryInterface`/
+  `DiagnosisRepositoryInterface` bindings, matching the pattern already
+  established by `CaseCatalogService` in Phase 4 instead of calling
+  `::create()`/`->update()` on the Eloquent models directly. Grouped the
+  six `/investigation/{attempt}/*` routes under one
+  `middleware()->prefix()` block instead of repeating both on every
+  route. Hardened `investigation/show.blade.php`'s evidence-tab JS to
+  build the new tab element via `textContent`/`createElement` instead of
+  interpolating the evidence item's title into an `innerHTML` template
+  literal (defense-in-depth against a stored-XSS vector if that title
+  ever contains markup). Removed a dead-code ternary in the same file
+  whose two branches were identical.
 
 ### Known issues
 

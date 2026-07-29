@@ -52,46 +52,39 @@ Route::post('/incidents/{case:slug}/start', [CaseAttemptController::class, 'stor
     ->middleware('auth')
     ->name('attempts.store');
 
-// Investigation Workspace — Milestone 2 (Evidence Explorer + Viewer; see
-// CaseAttemptController::show()). EnsureAttemptBelongsToUser protects
-// every attempt-scoped route regardless of how much of the workspace is
-// built yet.
-Route::get('/investigation/{attempt}', [CaseAttemptController::class, 'show'])
-    ->middleware(['auth', 'attempt.owner'])
-    ->name('investigation.show');
+// Investigation Workspace and every attempt-scoped action within it share
+// the same /investigation/{attempt} prefix and the same ownership guard
+// (EnsureAttemptBelongsToUser), so they're grouped instead of repeating
+// both on every route.
+Route::middleware(['auth', 'attempt.owner'])->prefix('investigation/{attempt}')->group(function () {
+    // Investigation Workspace (Milestone 2; see CaseAttemptController::show()).
+    Route::get('/', [CaseAttemptController::class, 'show'])->name('investigation.show');
 
-// Records that the student opened this evidence item (EvidenceInvestigationService
-// -> EvidenceViewed event -> RecordEvidenceView listener, per the architecture
-// doc's Example 1 trace). Fired client-side whenever a tab is activated.
-Route::post('/investigation/{attempt}/evidence/{evidenceItem}/view', [EvidenceController::class, 'recordView'])
-    ->middleware(['auth', 'attempt.owner'])
-    ->name('investigation.evidence.view');
+    // Records that the student opened this evidence item (EvidenceInvestigationService
+    // -> EvidenceViewed event -> RecordEvidenceView listener, per the architecture
+    // doc's Example 1 trace). Fired client-side whenever a tab is activated.
+    Route::post('/evidence/{evidenceItem}/view', [EvidenceController::class, 'recordView'])
+        ->name('investigation.evidence.view');
 
-// Engineering Notebook autosave (Milestone 3) — debounced PATCH from the
-// workspace's notebook textarea, upserting the attempt's single
-// investigation_notes row.
-Route::patch('/investigation/{attempt}/notes', [NotebookController::class, 'update'])
-    ->middleware(['auth', 'attempt.owner'])
-    ->name('investigation.notes.update');
+    // Engineering Notebook autosave (Milestone 3) — debounced PATCH from the
+    // workspace's notebook textarea, upserting the attempt's single
+    // investigation_notes row.
+    Route::patch('/notes', [NotebookController::class, 'update'])
+        ->name('investigation.notes.update');
 
-// Hint unlocking (Milestone 4) — idempotent penalty deduction via
-// HintUnlockService. abort_unless inside the controller guards against a
-// hint from a different case being unlocked against this attempt.
-Route::post('/investigation/{attempt}/hints/{hint}/unlock', [StudentHintController::class, 'unlock'])
-    ->middleware(['auth', 'attempt.owner'])
-    ->name('investigation.hints.unlock');
+    // Hint unlocking (Milestone 4) — idempotent penalty deduction via
+    // HintUnlockService. abort_unless inside the controller guards against a
+    // hint from a different case being unlocked against this attempt.
+    Route::post('/hints/{hint}/unlock', [StudentHintController::class, 'unlock'])
+        ->name('investigation.hints.unlock');
 
-// Submit Diagnosis (Milestone 6) — a deliberate separate step from the
-// Workspace, not another workspace tab, per the approved UX spec. Redirects
-// to the Performance Review placeholder on success; DiagnosisSubmissionService
-// is idempotent so a resubmission never creates a second diagnosis.
-Route::get('/investigation/{attempt}/report', [DiagnosisController::class, 'create'])
-    ->middleware(['auth', 'attempt.owner'])
-    ->name('investigation.diagnosis.create');
-
-Route::post('/investigation/{attempt}/report', [DiagnosisController::class, 'store'])
-    ->middleware(['auth', 'attempt.owner'])
-    ->name('investigation.diagnosis.store');
+    // Submit Diagnosis (Milestone 6) — a deliberate separate step from the
+    // Workspace, not another workspace tab, per the approved UX spec.
+    // DiagnosisSubmissionService is idempotent so a resubmission never
+    // creates a second diagnosis.
+    Route::get('/report', [DiagnosisController::class, 'create'])->name('investigation.diagnosis.create');
+    Route::post('/report', [DiagnosisController::class, 'store'])->name('investigation.diagnosis.store');
+});
 
 // Performance Review (Milestone 7) — the final screen in the investigation
 // journey. Redirects back to the Workspace if the attempt hasn't been

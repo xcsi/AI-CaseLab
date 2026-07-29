@@ -7,9 +7,14 @@ use App\Exceptions\ReattemptNotAllowedException;
 use App\Models\CaseAttempt;
 use App\Models\CaseModel;
 use App\Models\User;
+use App\Repositories\Contracts\CaseAttemptRepositoryInterface;
 
 class CaseAttemptService
 {
+    public function __construct(
+        private readonly CaseAttemptRepositoryInterface $caseAttempts,
+    ) {}
+
     /**
      * Resumes the student's in-progress attempt for this case if one
      * exists; otherwise starts a new one, enforcing the case's reattempt
@@ -19,7 +24,7 @@ class CaseAttemptService
      */
     public function start(CaseModel $case, User $user): CaseAttempt
     {
-        $inProgress = CaseAttempt::where('case_id', $case->id)
+        $inProgress = $case->attempts()
             ->where('user_id', $user->id)
             ->where('status', AttemptStatus::InProgress)
             ->latest('updated_at')
@@ -29,7 +34,7 @@ class CaseAttemptService
             return $inProgress;
         }
 
-        $hasCompleted = CaseAttempt::where('case_id', $case->id)
+        $hasCompleted = $case->attempts()
             ->where('user_id', $user->id)
             ->where('status', AttemptStatus::Completed)
             ->exists();
@@ -38,7 +43,7 @@ class CaseAttemptService
             throw new ReattemptNotAllowedException;
         }
 
-        return CaseAttempt::create([
+        return $this->caseAttempts->create([
             'case_id' => $case->id,
             'user_id' => $user->id,
             'status' => AttemptStatus::InProgress,

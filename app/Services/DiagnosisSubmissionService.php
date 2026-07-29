@@ -5,10 +5,17 @@ namespace App\Services;
 use App\Enums\AttemptStatus;
 use App\Models\CaseAttempt;
 use App\Models\Diagnosis;
+use App\Repositories\Contracts\CaseAttemptRepositoryInterface;
+use App\Repositories\Contracts\DiagnosisRepositoryInterface;
 use Illuminate\Support\Facades\DB;
 
 class DiagnosisSubmissionService
 {
+    public function __construct(
+        private readonly DiagnosisRepositoryInterface $diagnosisRepository,
+        private readonly CaseAttemptRepositoryInterface $caseAttempts,
+    ) {}
+
     /**
      * Idempotent: an attempt can only ever have one diagnosis
      * (case_attempts.id is unique on diagnoses), so a stale resubmission —
@@ -26,7 +33,8 @@ class DiagnosisSubmissionService
 
             $submittedAt = now();
 
-            $diagnosis = $attempt->diagnosis()->create([
+            $diagnosis = $this->diagnosisRepository->create([
+                'case_attempt_id' => $attempt->id,
                 'root_cause_text' => $data['root_cause_text'],
                 'proposed_fix_text' => $data['proposed_fix_text'],
                 'confidence_level' => $data['confidence_level'],
@@ -35,7 +43,7 @@ class DiagnosisSubmissionService
 
             $diagnosis->citedEvidence()->sync($data['cited_evidence_ids'] ?? []);
 
-            $attempt->update([
+            $this->caseAttempts->update($attempt, [
                 'status' => AttemptStatus::Submitted,
                 'submitted_at' => $submittedAt,
             ]);

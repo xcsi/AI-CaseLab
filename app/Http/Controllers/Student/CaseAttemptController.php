@@ -7,8 +7,6 @@ use App\Exceptions\ReattemptNotAllowedException;
 use App\Http\Controllers\Controller;
 use App\Models\CaseAttempt;
 use App\Models\CaseModel;
-use App\Models\EvidenceView;
-use App\Models\HintUnlock;
 use App\Services\CaseAttemptService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -39,11 +37,8 @@ class CaseAttemptController extends Controller
 
         return view('investigation.show', [
             'attempt' => $attempt,
-            'viewedEvidenceItemIds' => EvidenceView::where('case_attempt_id', $attempt->id)
-                ->pluck('evidence_item_id'),
-            'hintUnlocks' => HintUnlock::where('case_attempt_id', $attempt->id)
-                ->get()
-                ->keyBy('hint_id'),
+            'viewedEvidenceItemIds' => $attempt->evidenceViews()->pluck('evidence_item_id'),
+            'hintUnlocks' => $attempt->hintUnlocks()->get()->keyBy('hint_id'),
         ]);
     }
 }
