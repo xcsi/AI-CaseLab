@@ -9,6 +9,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Student\CaseAttemptController;
 use App\Http\Controllers\Student\CaseCatalogController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
+use App\Http\Controllers\Student\DiagnosisController;
 use App\Http\Controllers\Student\EvidenceController;
 use App\Http\Controllers\Student\HintController as StudentHintController;
 use App\Http\Controllers\Student\NotebookController;
@@ -79,6 +80,18 @@ Route::patch('/investigation/{attempt}/notes', [NotebookController::class, 'upda
 Route::post('/investigation/{attempt}/hints/{hint}/unlock', [StudentHintController::class, 'unlock'])
     ->middleware(['auth', 'attempt.owner'])
     ->name('investigation.hints.unlock');
+
+// Submit Diagnosis (Milestone 6) — a deliberate separate step from the
+// Workspace, not another workspace tab, per the approved UX spec. Redirects
+// to the Performance Review placeholder on success; DiagnosisSubmissionService
+// is idempotent so a resubmission never creates a second diagnosis.
+Route::get('/investigation/{attempt}/report', [DiagnosisController::class, 'create'])
+    ->middleware(['auth', 'attempt.owner'])
+    ->name('investigation.diagnosis.create');
+
+Route::post('/investigation/{attempt}/report', [DiagnosisController::class, 'store'])
+    ->middleware(['auth', 'attempt.owner'])
+    ->name('investigation.diagnosis.store');
 
 // Performance Review is a later screen — kept as a real placeholder route
 // (same scaffolding pattern used throughout this phase) so the Briefing's

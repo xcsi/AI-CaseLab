@@ -36,9 +36,9 @@
                     <span class="text-secondary small text-nowrap" id="workspace-progress" data-viewed="{{ $evidenceViewedCount }}" data-total="{{ $evidenceTotalCount }}">
                         {{ $evidenceViewedCount }}/{{ $evidenceTotalCount }} viewed
                     </span>
-                    <button type="button" class="btn btn-primary btn-sm" disabled title="Coming in a later milestone">
+                    <a href="{{ $diagnosisUrl }}" class="btn btn-primary btn-sm">
                         Submit Diagnosis
-                    </button>
+                    </a>
                 </div>
             </header>
 

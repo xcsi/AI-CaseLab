@@ -33,11 +33,6 @@ class CaseAttemptController extends Controller
         return redirect()->route('investigation.show', $attempt);
     }
 
-    /**
-     * Milestone 4 — Evidence Explorer/Viewer + Engineering Notebook + Hint
-     * Unlocking. Timer and diagnosis submission are still wired in by later
-     * milestones.
-     */
     public function show(CaseAttempt $attempt): View
     {
         $attempt->load(['case.evidenceItems.evidenceType', 'case.hints', 'investigationNote']);

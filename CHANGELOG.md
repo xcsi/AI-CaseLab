@@ -83,6 +83,26 @@ the first release is tagged.
   evidence-viewed counter, and Submit Diagnosis button no longer overflow
   the viewport on narrow screens and the case title truncates correctly
   instead of forcing horizontal scroll.
+- **Phase 5, Milestone 6 — Diagnosis Submission:** new Submit Diagnosis
+  screen (`GET`/`POST /investigation/{attempt}/report`) — root cause and
+  proposed fix textareas, a Low/Medium/High confidence segmented control,
+  and multi-select evidence-citation chips pre-checked from whatever the
+  student actually viewed (`EvidenceView`), plus a recap sidebar (hints
+  used + penalty, time spent, evidence viewed) that becomes a single-column
+  layout with a sticky bottom submit bar under `lg`, per the approved UX
+  spec. `DiagnosisSubmissionService::submit()` is idempotent — an attempt
+  can only ever have one diagnosis, so a stale resubmission (back-button,
+  slow double-click) returns the existing one instead of erroring — and
+  sets `case_attempts.status = Submitted` with `submitted_at`, leaving
+  `completed_at`/`score_earned` untouched since the Evaluation Engine
+  (Phase 10) doesn't exist yet. The confirm-before-submit modal's copy
+  reflects the case's own `allow_reattempt` policy. The Workspace top bar's
+  Submit Diagnosis button, disabled since Milestone 1, now links here.
+  Known gap, left for Phase 10: `CaseAttemptService::start()` only blocks
+  reattempts against `AttemptStatus::Completed`, not `Submitted`, so a
+  student can technically start a second attempt immediately after
+  submitting even on a no-reattempt case — resolving it depends on
+  Evaluation Engine design decisions out of this milestone's scope.
 
 ### Changed
 
