@@ -150,8 +150,10 @@ class AnalyticsService
      */
     public function categoryAggregates(): Collection
     {
-        return Category::query()->orderBy('name')->get()->map(function (Category $category) {
-            $caseIds = $category->cases()->pluck('id')->all();
+        // Eager-loads every category's case IDs in one query instead of
+        // one ->cases()->pluck() query-builder call per category.
+        return Category::query()->with('cases:id,category_id')->orderBy('name')->get()->map(function (Category $category) {
+            $caseIds = $category->cases->pluck('id')->all();
 
             return [
                 'category_id' => $category->id,

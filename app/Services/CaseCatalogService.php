@@ -96,11 +96,16 @@ class CaseCatalogService
     {
         $errors = [];
 
-        if ($case->rubricCriteria()->doesntExist()) {
+        // Reads the loaded rubricCriteria relation (lazy-loading it once if
+        // not already eager-loaded) instead of two separate ->rubricCriteria()
+        // query-builder calls — behaviorally identical, but callers that
+        // check this per-case in a loop (Admin\DashboardController::
+        // needsAttention()) can eager-load once instead of 2 queries per case.
+        if ($case->rubricCriteria->isEmpty()) {
             $errors[] = 'The case needs at least one rubric criterion.';
         }
 
-        if ((float) $case->rubricCriteria()->sum('weight') <= 0) {
+        if ((float) $case->rubricCriteria->sum('weight') <= 0) {
             $errors[] = 'The rubric criteria weights must sum to more than zero.';
         }
 
