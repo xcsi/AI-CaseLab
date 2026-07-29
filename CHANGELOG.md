@@ -103,6 +103,23 @@ the first release is tagged.
   student can technically start a second attempt immediately after
   submitting even on a no-reattempt case — resolving it depends on
   Evaluation Engine design decisions out of this milestone's scope.
+- **Phase 5, Milestone 7 — Performance Review:** the final screen in the
+  student investigation journey, replacing the placeholder at
+  `GET /performance-review/{attempt}`. Reads only existing data — no new
+  scoring: score header (total/max, color-coded percent badge, optional
+  "above/below case average" comparison shown only when another evaluated
+  attempt on the same case exists), per-criterion breakdown from
+  `EvaluationCriterionResult` (check/partial/cross icon derived from each
+  result's already-computed `score_awarded` vs `max_score`, not a new
+  algorithm), "What Actually Happened" from `cases.model_solution_summary`,
+  and a Back to Incidents / Re-attempt footer that becomes a sticky bottom
+  bar on mobile (`incidents.show`'s existing pattern). Re-attempt reuses
+  `attempts.store`/`CaseAttemptService::start()` as-is — no new attempt
+  logic. When an attempt has a diagnosis but no `Evaluation` row yet (true
+  of every real submission right now, since the Evaluation Engine is Phase
+  10), shows an "evaluation is still pending" state instead of a score;
+  visiting before any diagnosis was submitted redirects back to the
+  Workspace instead of a raw error.
 
 ### Changed
 

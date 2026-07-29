@@ -13,7 +13,7 @@ use App\Http\Controllers\Student\DiagnosisController;
 use App\Http\Controllers\Student\EvidenceController;
 use App\Http\Controllers\Student\HintController as StudentHintController;
 use App\Http\Controllers\Student\NotebookController;
-use App\Models\CaseAttempt;
+use App\Http\Controllers\Student\PerformanceReviewController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -93,12 +93,14 @@ Route::post('/investigation/{attempt}/report', [DiagnosisController::class, 'sto
     ->middleware(['auth', 'attempt.owner'])
     ->name('investigation.diagnosis.store');
 
-// Performance Review is a later screen — kept as a real placeholder route
-// (same scaffolding pattern used throughout this phase) so the Briefing's
-// "View Past Report" link has somewhere real to go instead of a 404.
-Route::get('/performance-review/{attempt}', function (CaseAttempt $attempt) {
-    return view('placeholder', ['title' => 'Performance Review']);
-})->middleware(['auth', 'attempt.owner'])->name('performance-review.show');
+// Performance Review (Milestone 7) — the final screen in the investigation
+// journey. Redirects back to the Workspace if the attempt hasn't been
+// submitted yet; renders an "awaiting evaluation" state instead of a score
+// when no Evaluation row exists (the Evaluation Engine is Phase 10, not
+// built yet) rather than fabricating one.
+Route::get('/performance-review/{attempt}', [PerformanceReviewController::class, 'show'])
+    ->middleware(['auth', 'attempt.owner'])
+    ->name('performance-review.show');
 
 Route::get('/work-history', function () {
     return view('placeholder', ['title' => 'Work History']);
