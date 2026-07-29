@@ -306,6 +306,34 @@ the first release is tagged.
   features — validation/error-state fixes only, verified manually by
   forcing the fetch to fail in-browser and confirming the error message
   appears and the hint stays locked.
+- **Roadmap Phase 12, Milestone 3 — End-to-end testing:** new
+  `EndToEndWorkflowTest` adds three continuous, HTTP-level tests for the
+  roadmap's named core flows — an admin authoring and publishing a case
+  through every real endpoint (category → case → publish-blocked →
+  hint → rubric → publish-succeeds → visible in the catalog); a student
+  completing a case through every real endpoint (browse → details →
+  start → workspace → evidence view → notes → hint unlock → submit →
+  performance review), asserting the final score correctly composes
+  rubric matching (keyword + evidence-citation, 25 raw) with the hint
+  penalty ceiling (capped to 20); and two students independently
+  completing the same case, asserting neither can reach the other's
+  workspace/notes/review and neither's page leaks the other's name or
+  diagnosis text once both are viewing a real, populated case-average.
+  These complement rather than replace the ~280 existing narrower
+  per-controller tests — nothing else in the suite previously proved
+  that one step's real HTTP response/redirect actually satisfies the
+  next step's precondition across the whole journey. Also added the
+  one genuinely untested `KeywordMatchStrategy` branch (no keywords
+  configured on a criterion → full credit, matching
+  `EvidenceCitationStrategy`'s already-tested empty-required-ids
+  behavior) to `EvaluationEngineTest`. No new features, no unrelated
+  refactoring — evidence authoring still has no admin UI (Phase 7 was
+  never built), so these tests attach evidence via factory like every
+  other test in the suite already does. Full suite: 291/291 passing.
+  Manually re-ran the student-completion flow's service calls directly
+  against the real MySQL dev database (transaction rolled back after)
+  to confirm the score-capping arithmetic matches the SQLite test
+  results exactly.
 
 ### Known issues
 
