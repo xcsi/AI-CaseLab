@@ -11,6 +11,7 @@ class WorkspaceLayout extends Component
         public string $title,
         public string $exitUrl,
         public string $startedAt,
+        public string $diagnosisUrl,
         public int $evidenceViewedCount = 0,
         public int $evidenceTotalCount = 0,
     ) {}

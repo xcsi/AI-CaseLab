@@ -56,7 +56,7 @@ class InvestigationWorkspaceShellTest extends TestCase
         $response->assertDontSee('Work History');
     }
 
-    public function test_the_submit_diagnosis_button_is_disabled(): void
+    public function test_the_submit_diagnosis_button_links_to_the_report_page(): void
     {
         $student = User::factory()->create();
         $attempt = CaseAttempt::factory()->create(['user_id' => $student->id]);
@@ -64,7 +64,7 @@ class InvestigationWorkspaceShellTest extends TestCase
         $response = $this->actingAs($student)->get(route('investigation.show', $attempt));
 
         $response->assertOk();
-        $response->assertSee('<button type="button" class="btn btn-primary btn-sm" disabled', false);
+        $response->assertSee('href="' . route('investigation.diagnosis.create', $attempt) . '"', false);
     }
 
     public function test_the_exit_link_points_back_to_the_incident_briefing(): void

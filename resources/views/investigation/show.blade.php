@@ -12,15 +12,10 @@
     :title="$case->title"
     :exit-url="route('cases.show', $case)"
     :started-at="$attempt->started_at->toIso8601String()"
+    :diagnosis-url="route('investigation.diagnosis.create', $attempt)"
     :evidence-viewed-count="$evidenceViewedCount"
     :evidence-total-count="$evidenceTotalCount"
 >
-    {{--
-        Milestone 2 — Evidence Explorer + Viewer. Still no Engineering
-        Notebook, autosave, hint unlocking, timer logic, or diagnosis
-        submission — those are later milestones.
-    --}}
-
     {{-- Phone gate: below 576px, the workspace opens read-only-by-default
          with an explicit override, per the approved UX spec. --}}
     <div id="workspace-phone-gate" class="d-sm-none p-3">
