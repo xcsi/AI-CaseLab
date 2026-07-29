@@ -371,6 +371,28 @@ the first release is tagged.
   verified by the full suite (unchanged, 291/291 passing) and by
   re-rendering both fixed pages in-browser against real seeded data to
   confirm identical output.
+- **Roadmap Phase 12, Milestone 5 — Deployment preparation & production
+  readiness (final roadmap milestone):** `docs/12-deployment-guide.md`
+  covering server requirements, environment configuration, build/deploy
+  steps, and migration/seeding — re-verified for real with a fresh
+  `php artisan migrate:fresh --seed` (23 migrations, zero errors) plus
+  the new `DemoDataSeeder` (three fully-populated, published cases —
+  "API Returning 500 on Checkout," "Login Failures After Password
+  Reset," "Dashboard Queries Timing Out" — confirmed idempotent via a
+  second run producing identical counts). Executed a full manual smoke
+  test as scripted authenticated HTTP requests against a live
+  `php artisan serve` instance (browser automation wasn't available in
+  this environment) covering the complete student journey (register →
+  catalog → case detail → start attempt → workspace → evidence view →
+  notebook autosave → hint unlock → diagnosis submit → scored
+  Performance Review → Work History) and admin journey (login →
+  Dashboard → Cases → Categories → Analytics → Evaluations manual-review
+  queue → opened and saved a manual review), plus guest-redirect
+  negative checks — 25/25 checks passed, no application code changed to
+  make it pass (three script mistakes were corrected against the real
+  route/JS/request-field names instead). Added an explicit Production
+  Deployment Checklist and Release Checklist to the deployment guide.
+  No business-logic changes; full suite unchanged at 291/291 passing.
 
 ### Known issues
 
