@@ -180,3 +180,48 @@ Suggested demo script: log in as `admin@aicaselab.test` to show the authoring/ru
 - [ ] Working tree clean, feature branch pushed to `origin`
 - [ ] Demo data available for a live walkthrough if one is scheduled (§7)
 - [ ] Known limitations (§5) still accurate — re-read, don't assume unchanged
+
+---
+
+## 10. LLM Provider Setup (Version 2 — Engineering Discussion)
+
+Covers roadmap Phase 22's first deliverable: deployment-facing setup for the Discussion Engine's provider-agnostic LLM layer (`docs/13-ai-discussion-engine-design.md` §1.4). This is purely additive to everything above — none of §1–9 changes, and a deployment with **no `LLM_*` variables set at all** still works. Tier 1 (Ollama) is always attempted; an unreachable local instance just fails its liveness check quickly and falls through (§1.4.3). If every tier is unreachable or unconfigured, `DiscussionService` reports the discussion feature as unavailable in the UI — it never blocks the core Version 1 diagnosis path in front of it (§1.4.5).
+
+### 10.1 Illustrative `.env` shape
+
+The block below is the same illustrative shape as `docs/13` §1.4.7 — not a commitment to exact model IDs, which drift over time (see §10.3). `.env.example` in this repo does **not** currently ship any of these keys pre-filled, by deliberate decision (§10.3) — add only the tiers actually in use:
+
+```
+LLM_MAX_TOKENS=300
+
+LLM_OLLAMA_BASE_URL=http://localhost:11434/v1
+LLM_OLLAMA_MODEL=qwen2.5:7b
+
+LLM_OPENROUTER_API_KEY=
+LLM_OPENROUTER_FREE_MODEL=meta-llama/llama-3.1-8b-instruct:free
+
+LLM_GEMINI_API_KEY=
+LLM_GEMINI_MODEL=gemini-1.5-flash
+
+LLM_ALLOW_PAID_FALLBACK=false
+LLM_PAID_FALLBACK_PROVIDER=
+LLM_OPENAI_API_KEY=
+LLM_OPENAI_MODEL=gpt-4o-mini
+LLM_ANTHROPIC_API_KEY=
+LLM_ANTHROPIC_MODEL=claude-3-5-haiku-20241022
+```
+
+`LLM_ALLOW_PAID_FALLBACK` must stay `false` unless a paid tier is a deliberate choice — when `false`, `LlmClientFactory` never constructs a paid-tier client at all, not even a disabled one (§1.4.4). Every other tier is independently optional to configure.
+
+### 10.2 Ollama installation note
+
+Ollama is the free, local, always-attempted tier — the only one with no API key or network dependency, so it's the natural default for a self-hosted deployment.
+
+1. Install Ollama for the target OS from its official distribution (a native installer on macOS/Windows, or the vendor's Linux install script) and confirm it's running: `ollama --version`.
+2. Pull a model: `ollama pull qwen2.5:7b` (or whatever model is chosen — see §10.3 before treating any specific slug as validated).
+3. `LLM_OLLAMA_BASE_URL` must point at Ollama's **OpenAI-compatible** endpoint, which requires the `/v1` suffix (`http://localhost:11434/v1`, not `http://localhost:11434`) — a bare host-and-port 404s on every request. This is the config default already, but worth double-checking after any manual override.
+4. Verify before relying on it in production: `curl http://localhost:11434/v1/models` should return a JSON model list, not a connection error or 404.
+
+### 10.3 Provider conformance results
+
+The specific model slugs shown in §10.1 are illustrative defaults, not vetted recommendations. Phase 21 ran real behavioral conformance validation against one live model per free tier (Ollama, OpenRouter, Gemini) — full methodology, per-transcript results, and findings (including a real, reproduced leak in one free-tier model, and a cross-provider gap on the "accept" verdict) are recorded in **`docs/15-provider-conformance-results.md`**. As of that validation, no tested model slug is recommended as a trusted shipped default. Before enabling the Discussion Engine against a specific model in production, either use one already validated in that document or run the same harness (`php artisan discussion:validate-provider {provider}`) against the intended choice first.
