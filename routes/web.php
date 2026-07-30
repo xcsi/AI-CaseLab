@@ -96,7 +96,12 @@ Route::middleware(['auth', 'attempt.owner'])->prefix('investigation/{attempt}')-
     // (Phase 18).
     Route::post('/discussion', [DiscussionController::class, 'start'])->name('investigation.discussion.start');
     Route::get('/discussion', [DiscussionController::class, 'show'])->name('investigation.discussion.show');
-    Route::post('/discussion/messages', [DiscussionController::class, 'respond'])->name('investigation.discussion.respond');
+    // Rate limited per §8's cost-abuse mitigation (Phase 17 Milestone 4) —
+    // the messages endpoint specifically, since it's the one that triggers
+    // an LLM call on every request.
+    Route::post('/discussion/messages', [DiscussionController::class, 'respond'])
+        ->middleware('throttle:discussion-messages')
+        ->name('investigation.discussion.respond');
     Route::post('/discussion/end', [DiscussionController::class, 'end'])->name('investigation.discussion.end');
 });
 
