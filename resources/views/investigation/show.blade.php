@@ -199,6 +199,110 @@
         </div>
     </div>
 
+    {{-- Engineering Discussion panel (Version 2, Phase 18). A Bootstrap
+         modal reusing the workspace's existing dark-panel visual language
+         (docs/13 §11.1), the same register the evidence log/code viewers
+         already establish, rather than a generic light chat-bubble UI.
+         Gated on discussion_enabled, the same condition the entry point
+         button (Milestone 1) already uses, so a disabled case's markup
+         stays byte-for-byte what it was before Version 2 existed. --}}
+    @if ($case->discussion_enabled)
+    <div class="modal fade" id="discussion-panel-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content discussion-panel">
+                <div class="modal-header border-0">
+                    <div>
+                        <h5 class="modal-title mb-0">Engineering Discussion</h5>
+                        <span class="small discussion-round-counter" id="discussion-round-counter"></span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        {{-- Always available while the discussion is active
+                             (§11.1) — hidden once the session is no longer
+                             active, since there's nothing left to end. --}}
+                        <button type="button" class="btn btn-outline-danger btn-sm d-none" id="discussion-end-button">End Discussion</button>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                </div>
+                <div class="modal-body pt-0">
+                    <p class="small discussion-error d-none" id="discussion-error"></p>
+
+                    {{-- "AI Discussion Unavailable" state (§11.5, Milestone
+                         4) — the fallback chain exhausted, not a validation
+                         error (#discussion-error above, .text-danger red)
+                         and not a silently-retried network failure (the
+                         Notebook's autosave pattern) — a plain, neutral,
+                         specific message instead of a chat bubble, with a
+                         "Try Again" action the student triggers themselves
+                         rather than an automatic retry loop. The message
+                         text itself always comes from the server response
+                         (DiscussionController's already-generic copy) —
+                         never hardcoded here — so no provider name can ever
+                         reach this template. --}}
+                    <div class="discussion-unavailable d-none" id="discussion-unavailable">
+                        <p class="mb-2" id="discussion-unavailable-message"></p>
+                        <button type="button" class="btn btn-outline-light btn-sm" id="discussion-unavailable-retry">Try Again</button>
+                    </div>
+
+                    <div class="discussion-transcript" id="discussion-transcript"></div>
+
+                    {{-- Accept -> diagnosis-prefill transition moment (§11.1,
+                         Milestone 3) — a deliberate call to action, not a
+                         silent redirect, so the student understands the
+                         discussion just fed into the next step. The
+                         diagnosis form itself pre-fills the accepted
+                         position server-side (DiagnosisController::create). --}}
+                    <div class="discussion-outcome-banner d-none" id="discussion-accepted-banner">
+                        <p class="mb-2">Your position was accepted. Continue to your diagnosis &mdash; it will open with your accepted position pre-filled, and you can still edit it before submitting.</p>
+                        <a href="{{ route('investigation.diagnosis.create', $attempt) }}" class="btn btn-success btn-sm">Continue to Diagnosis</a>
+                    </div>
+
+                    <p class="small discussion-thinking d-none" id="discussion-thinking">AI is thinking&hellip;</p>
+
+                    <form id="discussion-open-form" class="d-none">
+                        <label for="discussion-open-input" class="form-label small">
+                            State your position &mdash; what's your read on this incident so far?
+                        </label>
+                        <textarea id="discussion-open-input" class="form-control discussion-input" rows="3" maxlength="5000" required></textarea>
+                        <button type="submit" class="btn btn-primary btn-sm mt-2" id="discussion-open-submit">Begin Discussion</button>
+                    </form>
+
+                    <form id="discussion-reply-form" class="d-none d-flex gap-2 mt-2">
+                        <textarea id="discussion-reply-input" class="form-control discussion-input flex-grow-1" rows="2" maxlength="5000" placeholder="Respond&hellip;" required></textarea>
+                        <button type="submit" class="btn btn-primary btn-sm align-self-end" id="discussion-reply-submit">Send</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- End Discussion confirmation, mirroring the existing
+         exit-confirmation modal pattern (#notebook-exit-confirm). Cancel
+         and Close reopen the discussion panel modal explicitly (rather
+         than data-bs-dismiss) since this confirmation is triggered from
+         inside the already-open discussion panel modal — Bootstrap
+         doesn't natively chain two simultaneously-open modals, so this
+         hide-then-show handoff is Bootstrap's own documented pattern for
+         moving between modals. --}}
+    <div class="modal fade" id="discussion-end-confirm" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">End this discussion?</h5>
+                    <button type="button" class="btn-close" id="discussion-end-confirm-close" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">You won't be able to continue this Engineering Discussion after ending it.</p>
+                    <p class="text-danger small mb-0 mt-2 d-none" id="discussion-end-confirm-error">Couldn't end the discussion &mdash; please try again.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" id="discussion-end-confirm-cancel">Keep Discussing</button>
+                    <button type="button" class="btn btn-danger" id="discussion-end-confirm-proceed">End Discussion</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <script>
         (function () {
             const attemptId = {{ $attempt->id }};
@@ -528,6 +632,306 @@
                     document.getElementById('ws-panel-notes').classList.toggle('d-flex', target === 'ws-panel-notes');
                 });
             });
+
+            @if ($case->discussion_enabled)
+            // Engineering Discussion panel (Version 2, Phase 18). Mirrors
+            // the Notebook autosave / Hint unlock fetch conventions above:
+            // CSRF header, .then/.catch chains, disabled-state handling
+            // while a request is in flight. #discussion-error is a minimal
+            // fallback for generic/network failures only — the dedicated
+            // "AI Discussion Unavailable" state (chain exhausted, §11.5)
+            // is #discussion-unavailable, further below. The whole block
+            // is server-side gated (not just the runtime
+            // `if (discussionStartButton)` check below) so a
+            // disabled case's page source contains none of these element
+            // IDs at all, matching the existing entry point's guarantee.
+            const discussionStartButton = document.getElementById('workspace-discussion-start-button');
+
+            if (discussionStartButton) {
+                const discussionUrl = discussionStartButton.dataset.discussionStartUrl;
+                const discussionMessagesUrl = `/investigation/${attemptId}/discussion/messages`;
+                const discussionEndUrl = `/investigation/${attemptId}/discussion/end`;
+
+                const discussionModalEl = document.getElementById('discussion-panel-modal');
+                const discussionRoundCounter = document.getElementById('discussion-round-counter');
+                const discussionTranscript = document.getElementById('discussion-transcript');
+                const discussionThinking = document.getElementById('discussion-thinking');
+                const discussionError = document.getElementById('discussion-error');
+                const discussionUnavailable = document.getElementById('discussion-unavailable');
+                const discussionUnavailableMessage = document.getElementById('discussion-unavailable-message');
+                const discussionAcceptedBanner = document.getElementById('discussion-accepted-banner');
+                const discussionOpenForm = document.getElementById('discussion-open-form');
+                const discussionOpenInput = document.getElementById('discussion-open-input');
+                const discussionOpenSubmit = document.getElementById('discussion-open-submit');
+                const discussionReplyForm = document.getElementById('discussion-reply-form');
+                const discussionReplyInput = document.getElementById('discussion-reply-input');
+                const discussionReplySubmit = document.getElementById('discussion-reply-submit');
+                const discussionEndButton = document.getElementById('discussion-end-button');
+                const discussionEndConfirmEl = document.getElementById('discussion-end-confirm');
+                const discussionEndConfirmError = document.getElementById('discussion-end-confirm-error');
+                const discussionEndConfirmProceed = document.getElementById('discussion-end-confirm-proceed');
+
+                function renderDiscussionTurns(turns) {
+                    discussionTranscript.innerHTML = '';
+                    turns.forEach((turn) => {
+                        const row = document.createElement('div');
+                        row.className = `discussion-turn discussion-turn-${turn.role}`;
+
+                        const bubble = document.createElement('div');
+                        bubble.className = 'discussion-turn-bubble';
+                        bubble.textContent = turn.content;
+
+                        row.appendChild(bubble);
+                        discussionTranscript.appendChild(row);
+                    });
+                    discussionTranscript.scrollTop = discussionTranscript.scrollHeight;
+                }
+
+                function applyDiscussionSession(data) {
+                    hideDiscussionUnavailable();
+                    discussionRoundCounter.textContent = `Round ${data.session.round_count} of ${data.session.max_rounds}`;
+                    renderDiscussionTurns(data.turns);
+
+                    const active = data.session.status === 'active';
+                    discussionOpenForm.classList.add('d-none');
+                    discussionReplyForm.classList.toggle('d-none', !active);
+                    discussionReplyInput.disabled = !active;
+                    discussionReplySubmit.disabled = !active;
+                    discussionEndButton.classList.toggle('d-none', !active);
+
+                    // Accept -> diagnosis-prefill transition moment (§11.1,
+                    // Milestone 3) — re-evaluated every time a session is
+                    // loaded (start, respond, or reopening the panel on an
+                    // already-accepted session), not just immediately after
+                    // the accepting turn, so the call to action is never
+                    // silently missed.
+                    discussionAcceptedBanner.classList.toggle('d-none', data.session.status !== 'accepted');
+                }
+
+                function showDiscussionThinking(isThinking) {
+                    discussionThinking.classList.toggle('d-none', !isThinking);
+                }
+
+                function showDiscussionError(message) {
+                    discussionError.textContent = message;
+                    discussionError.classList.remove('d-none');
+                }
+
+                function hideDiscussionError() {
+                    discussionError.classList.add('d-none');
+                }
+
+                // "AI Discussion Unavailable" state (§11.5, Milestone 4) —
+                // replaces the forms/end-button (nothing to submit or end
+                // while no AI reviewer is reachable) but leaves any
+                // existing transcript visible, since that's real prior
+                // conversation, not part of the failure.
+                function showDiscussionUnavailable(message) {
+                    discussionOpenForm.classList.add('d-none');
+                    discussionReplyForm.classList.add('d-none');
+                    discussionEndButton.classList.add('d-none');
+                    discussionAcceptedBanner.classList.add('d-none');
+                    hideDiscussionError();
+                    discussionUnavailableMessage.textContent = message;
+                    discussionUnavailable.classList.remove('d-none');
+                }
+
+                function hideDiscussionUnavailable() {
+                    discussionUnavailable.classList.add('d-none');
+                }
+
+                // Loads (or re-loads) the current discussion state via the
+                // show endpoint — used both to open the panel and as the
+                // "Try Again" action from the unavailable state (§11.5): a
+                // student-triggered re-check, not an automatic retry loop.
+                function loadDiscussionPanel() {
+                    hideDiscussionError();
+                    hideDiscussionUnavailable();
+                    showDiscussionThinking(true);
+
+                    fetch(discussionUrl, {
+                        method: 'GET',
+                        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                    })
+                        .then((response) => (response.status === 404 ? { status: 'not_found' } : response.json()))
+                        .then((data) => {
+                            showDiscussionThinking(false);
+
+                            if (data.status === 'not_found') {
+                                discussionOpenForm.classList.remove('d-none');
+                                return;
+                            }
+
+                            if (data.status === 'unavailable') {
+                                showDiscussionUnavailable(data.message);
+                                return;
+                            }
+
+                            applyDiscussionSession(data);
+                        })
+                        .catch(() => {
+                            showDiscussionThinking(false);
+                            showDiscussionError("Couldn't load Engineering Discussion — please try again.");
+                        });
+                }
+
+                discussionStartButton.addEventListener('click', () => {
+                    hideDiscussionError();
+                    hideDiscussionUnavailable();
+                    discussionTranscript.innerHTML = '';
+                    discussionRoundCounter.textContent = '';
+                    discussionOpenForm.classList.add('d-none');
+                    discussionReplyForm.classList.add('d-none');
+                    discussionEndButton.classList.add('d-none');
+                    discussionAcceptedBanner.classList.add('d-none');
+                    bootstrap.Modal.getOrCreateInstance(discussionModalEl).show();
+                    loadDiscussionPanel();
+                });
+
+                document.getElementById('discussion-unavailable-retry')?.addEventListener('click', loadDiscussionPanel);
+
+                discussionOpenForm.addEventListener('submit', (event) => {
+                    event.preventDefault();
+                    const openingPosition = discussionOpenInput.value.trim();
+                    if (!openingPosition) return;
+
+                    hideDiscussionError();
+                    discussionOpenSubmit.disabled = true;
+                    showDiscussionThinking(true);
+
+                    fetch(discussionUrl, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ opening_position: openingPosition }),
+                    })
+                        .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
+                        .then(({ ok, data }) => {
+                            showDiscussionThinking(false);
+                            discussionOpenSubmit.disabled = false;
+
+                            if (data && data.status === 'unavailable') {
+                                showDiscussionUnavailable(data.message);
+                                return;
+                            }
+
+                            if (!ok || data.status !== 'ok') {
+                                showDiscussionError(data.message || "Couldn't start Engineering Discussion — please try again.");
+                                return;
+                            }
+
+                            discussionOpenInput.value = '';
+                            applyDiscussionSession(data);
+                        })
+                        .catch(() => {
+                            showDiscussionThinking(false);
+                            discussionOpenSubmit.disabled = false;
+                            showDiscussionError("Couldn't start Engineering Discussion — please try again.");
+                        });
+                });
+
+                discussionReplyForm.addEventListener('submit', (event) => {
+                    event.preventDefault();
+                    const message = discussionReplyInput.value.trim();
+                    if (!message) return;
+
+                    hideDiscussionError();
+                    discussionReplyInput.disabled = true;
+                    discussionReplySubmit.disabled = true;
+                    showDiscussionThinking(true);
+
+                    fetch(discussionMessagesUrl, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ message }),
+                    })
+                        .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
+                        .then(({ ok, data }) => {
+                            showDiscussionThinking(false);
+
+                            if (data && data.status === 'unavailable') {
+                                discussionReplyInput.disabled = false;
+                                discussionReplySubmit.disabled = false;
+                                showDiscussionUnavailable(data.message);
+                                return;
+                            }
+
+                            if (!ok || data.status !== 'ok') {
+                                discussionReplyInput.disabled = false;
+                                discussionReplySubmit.disabled = false;
+                                showDiscussionError(data.message || "Couldn't send your message — please try again.");
+                                return;
+                            }
+
+                            discussionReplyInput.value = '';
+                            applyDiscussionSession(data);
+                        })
+                        .catch(() => {
+                            showDiscussionThinking(false);
+                            discussionReplyInput.disabled = false;
+                            discussionReplySubmit.disabled = false;
+                            showDiscussionError("Couldn't send your message — please try again.");
+                        });
+                });
+
+                // End Discussion confirmation (§11.1, Milestone 3) —
+                // mirrors #notebook-exit-confirm's pattern, but Cancel and
+                // Close reopen the discussion panel modal explicitly
+                // (rather than data-bs-dismiss) since this confirmation
+                // opens from inside the already-open discussion panel.
+                discussionEndButton.addEventListener('click', () => {
+                    discussionEndConfirmError.classList.add('d-none');
+                    bootstrap.Modal.getOrCreateInstance(discussionModalEl).hide();
+                    bootstrap.Modal.getOrCreateInstance(discussionEndConfirmEl).show();
+                });
+
+                function reopenDiscussionPanel() {
+                    bootstrap.Modal.getOrCreateInstance(discussionEndConfirmEl).hide();
+                    bootstrap.Modal.getOrCreateInstance(discussionModalEl).show();
+                }
+
+                document.getElementById('discussion-end-confirm-cancel')?.addEventListener('click', reopenDiscussionPanel);
+                document.getElementById('discussion-end-confirm-close')?.addEventListener('click', reopenDiscussionPanel);
+
+                discussionEndConfirmProceed.addEventListener('click', function () {
+                    const proceedButton = this;
+                    proceedButton.disabled = true;
+                    proceedButton.textContent = 'Ending…';
+                    discussionEndConfirmError.classList.add('d-none');
+
+                    fetch(discussionEndUrl, {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                    })
+                        .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
+                        .then(({ ok, data }) => {
+                            if (!ok || data.status !== 'ok') {
+                                discussionEndConfirmError.textContent = data.message || "Couldn't end the discussion — please try again.";
+                                discussionEndConfirmError.classList.remove('d-none');
+                                return;
+                            }
+
+                            applyDiscussionSession(data);
+                            reopenDiscussionPanel();
+                        })
+                        .catch(() => {
+                            discussionEndConfirmError.textContent = "Couldn't end the discussion — please try again.";
+                            discussionEndConfirmError.classList.remove('d-none');
+                        })
+                        .finally(() => {
+                            proceedButton.disabled = false;
+                            proceedButton.textContent = 'End Discussion';
+                        });
+                });
+            }
+            @endif
         })();
     </script>
 </x-workspace-layout>

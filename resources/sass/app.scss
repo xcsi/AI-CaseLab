@@ -297,3 +297,103 @@
     margin-top: 0.25rem;
     padding-left: 1.6rem;
 }
+
+// Engineering Discussion panel (Version 2, Phase 18). Reuses the same
+// dark palette the evidence log/code viewers established above (docs/13
+// §11.1: "the workspace's existing dark-panel visual language"), not a
+// new chat-bubble design language.
+.discussion-panel {
+    background: #1e1e2e;
+    color: #d4d4e0;
+}
+
+.discussion-round-counter {
+    color: #8890a6;
+}
+
+.discussion-error {
+    color: #ff6b6b;
+}
+
+.discussion-thinking {
+    color: #8890a6;
+}
+
+.discussion-transcript {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 50vh;
+    overflow-y: auto;
+    margin-bottom: 0.5rem;
+}
+
+.discussion-turn {
+    display: flex;
+}
+
+.discussion-turn-student {
+    justify-content: flex-end;
+}
+
+.discussion-turn-ai {
+    justify-content: flex-start;
+}
+
+.discussion-turn-bubble {
+    max-width: 85%;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.discussion-turn-student .discussion-turn-bubble {
+    background: #33354a;
+}
+
+.discussion-turn-ai .discussion-turn-bubble {
+    background: #2a2d3f;
+    border-left: 2px solid #8890a6;
+}
+
+.discussion-input {
+    background: #14141f;
+    color: #d4d4e0;
+    border-color: #33354a;
+
+    &:focus {
+        background: #14141f;
+        color: #d4d4e0;
+        border-color: #8890a6;
+        box-shadow: none;
+    }
+}
+
+// Accept -> diagnosis-prefill transition moment (Milestone 3). A quiet
+// success tint against the dark panel, not a bright alert box — it's a
+// next-step nudge, not a warning.
+.discussion-outcome-banner {
+    background: #1f3a2e;
+    border: 1px solid #3a6a52;
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+}
+
+// "AI Discussion Unavailable" state (§11.5, Milestone 4). Deliberately
+// neutral slate, not the red used for #discussion-error/validation
+// errors and not the green of .discussion-outcome-banner above — per the
+// design, this should read as "the AI reviewer isn't in today," not
+// "something's broken."
+.discussion-unavailable {
+    background: #23273a;
+    border: 1px solid #3a3f55;
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    color: #d4d4e0;
+}

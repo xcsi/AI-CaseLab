@@ -5,6 +5,12 @@
     $evidenceViewedCount = $viewedEvidenceItemIds->count();
     $minutesSpent = (int) $attempt->started_at->diffInMinutes(now());
     $citedIds = old('cited_evidence_ids', $viewedEvidenceItemIds->all());
+    // Accept -> diagnosis-prefill (docs/13 §11.1, Phase 18 Milestone 3):
+    // an accepted Engineering Discussion's position pre-fills this field,
+    // editable like any other old()-restored value, deferring to old()
+    // first so a validation-error redisplay never clobbers what the
+    // student already edited.
+    $rootCauseText = old('root_cause_text', $acceptedDiscussionPosition ?? '');
 
     $formatPenalty = fn ($value) => \App\Support\ScoreFormatter::trim($value);
 @endphp
@@ -48,7 +54,7 @@
                                 rows="5"
                                 class="form-control @error('root_cause_text') is-invalid @enderror"
                                 required
-                            >{{ old('root_cause_text') }}</textarea>
+                            >{{ $rootCauseText }}</textarea>
                             @error('root_cause_text')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
