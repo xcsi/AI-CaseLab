@@ -1,0 +1,120 @@
+<?php
+
+namespace Tests\Feature\Discussion;
+
+use App\Discussion\Exceptions\LlmProviderUnavailableException;
+use App\Discussion\Infrastructure\Llm\Providers\AnthropicLlmClient;
+use App\Discussion\SystemPrompt;
+use App\Enums\DiscussionVerdict;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Facades\Http;
+use Tests\TestCase;
+
+/**
+ * Proves AnthropicLlmClient's HTTP transport for Phase 14 Milestone 3, per
+ * docs/14-v2-implementation-roadmap.md — same Http::fake() discipline as
+ * OpenAiCompatibleLlmClientTest, adapted to the Messages API's distinct wire
+ * format: a top-level "system" field (not a system-role message) and
+ * "user"/"assistant" roles only.
+ */
+class AnthropicLlmClientTest extends TestCase
+{
+    public function test_it_sends_a_correctly_formed_request_and_parses_a_successful_reply(): void
+    {
+        Http::fake([
+            'https://api.anthropic.com/v1/messages' => Http::response([
+                'content' => [
+                    ['type' => 'text', 'text' => json_encode([
+                        'reply_text' => 'Where in the log, specifically?',
+                        'verdict' => 'continue',
+                        'evidence_referenced' => [3],
+                        'internal_note' => 'Vague citation.',
+                    ])],
+                ],
+            ], 200),
+        ]);
+
+        $client = new AnthropicLlmClient(
+            apiKey: 'anthropic-test-key',
+            model: 'claude-3-5-haiku-20241022',
+            maxTokens: 300,
+            supportsStructuredOutput: true,
+        );
+
+        $result = $client->complete(
+            new SystemPrompt('You are a strict technical interviewer.'),
+            [['role' => 'student', 'content' => 'The log shows an error.'], ['role' => 'ai', 'content' => 'Which one?']],
+            'The timeout one.'
+        );
+
+        $this->assertSame('Where in the log, specifically?', $result->replyText);
+        $this->assertSame(DiscussionVerdict::Continue, $result->verdict);
+        $this->assertSame([3], $result->evidenceReferenced);
+        $this->assertSame('anthropic', $result->provider);
+        $this->assertSame('claude-3-5-haiku-20241022', $result->model);
+
+        Http::assertSent(function ($request) {
+            return $request->url() === 'https://api.anthropic.com/v1/messages'
+                && $request->hasHeader('x-api-key', 'anthropic-test-key')
+                && $request->hasHeader('anthropic-version', '2023-06-01')
+                // System prompt is a top-level field, never a message in the array
+                && $request['system'] === 'You are a strict technical interviewer.'
+                && $request['messages'][0] === ['role' => 'user', 'content' => 'The log shows an error.']
+                && $request['messages'][1] === ['role' => 'assistant', 'content' => 'Which one?']
+                && $request['messages'][2] === ['role' => 'user', 'content' => 'The timeout one.']
+                // Messages array must never contain a "system" role for this provider
+                && ! collect($request['messages'])->pluck('role')->contains('system');
+        });
+    }
+
+    public function test_a_429_response_throws_llm_provider_unavailable_exception(): void
+    {
+        Http::fake(['https://api.anthropic.com/v1/messages' => Http::response(['error' => 'rate limited'], 429)]);
+
+        $this->expectException(LlmProviderUnavailableException::class);
+        $this->expectExceptionMessage('Rate limited by anthropic');
+
+        $this->client()->complete(new SystemPrompt('system'), [], 'hello');
+    }
+
+    public function test_a_connection_timeout_throws_llm_provider_unavailable_exception(): void
+    {
+        Http::fake([
+            'https://api.anthropic.com/v1/messages' => fn () => throw new ConnectionException('Connection timed out'),
+        ]);
+
+        $this->expectException(LlmProviderUnavailableException::class);
+        $this->expectExceptionMessage('Connection to anthropic');
+
+        $this->client()->complete(new SystemPrompt('system'), [], 'hello');
+    }
+
+    public function test_a_server_error_response_throws_llm_provider_unavailable_exception(): void
+    {
+        Http::fake(['https://api.anthropic.com/v1/messages' => Http::response('overloaded', 529)]);
+
+        $this->expectException(LlmProviderUnavailableException::class);
+
+        $this->client()->complete(new SystemPrompt('system'), [], 'hello');
+    }
+
+    public function test_a_genuine_client_error_propagates_as_a_distinct_exception(): void
+    {
+        Http::fake(['https://api.anthropic.com/v1/messages' => Http::response(['error' => 'invalid x-api-key'], 401)]);
+
+        $this->expectException(RequestException::class);
+
+        $this->client()->complete(new SystemPrompt('system'), [], 'hello');
+    }
+
+    private function client(): AnthropicLlmClient
+    {
+        return new AnthropicLlmClient(
+            apiKey: 'anthropic-test-key',
+            model: 'claude-3-5-haiku-20241022',
+            maxTokens: 300,
+            supportsStructuredOutput: true,
+        );
+    }
+}
