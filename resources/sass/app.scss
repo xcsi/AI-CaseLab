@@ -14,6 +14,30 @@
     min-height: 0 !important;
 }
 
+// Admin sidebar (layouts/admin-navigation.blade.php) full-height fix.
+// #admin-sidebar's dark background previously only ever reached a fixed
+// 100vh (an inline `min-height: 100vh` on its inner div): fine when a
+// page's content is one viewport tall or shorter, but on longer admin
+// pages (Case Edit, Analytics) the flex row containing the sidebar and
+// main content stretches taller than 100vh together, leaving the
+// sidebar's dark background short of the real page height — a plain
+// white gap underneath it, since the sidebar's own flex item
+// (`.flex-shrink-0` in layouts/admin.blade.php) *does* stretch to the
+// row's full height already, but nothing inside it was filling that
+// stretched height. `height: 100%` resolves against the row's actual
+// height at md+ (where the sidebar is a flex item); below md it has no
+// defined parent height (the sidebar is a `.collapse` dropdown there,
+// not a flex item), so per the CSS spec it computes as `auto` and the
+// min-height below keeps today's mobile behavior unchanged.
+#admin-sidebar,
+.admin-sidebar-inner {
+    height: 100%;
+}
+
+.admin-sidebar-inner {
+    min-height: 100vh;
+}
+
 // Engineering Office shell: active nav item reads as underlined + bold,
 // not a filled pill — keeps the primary nav calm (docs/09 UX spec, Shell).
 .navbar-nav .nav-link.active {

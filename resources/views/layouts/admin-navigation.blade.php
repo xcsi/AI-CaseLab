@@ -8,7 +8,7 @@
 </nav>
 
 <div class="collapse d-md-block bg-dark text-white" id="admin-sidebar">
-    <div class="d-flex flex-column p-3" style="min-height: 100vh;">
+    <div class="d-flex flex-column admin-sidebar-inner p-3">
         <a href="{{ route('admin.dashboard') }}" class="d-none d-md-flex align-items-center gap-2 mb-4 text-white text-decoration-none fs-5">
             <x-application-logo class="text-white" style="width: 1.75rem; height: 1.75rem;" />
             AI CaseLab Admin

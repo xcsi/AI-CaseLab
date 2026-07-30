@@ -27,6 +27,13 @@
                             {{ __('Work History') }}
                         </x-nav-link>
                     </li>
+                    @if (Auth::user()->hasRole(\App\Enums\UserRole::Admin) || Auth::user()->hasRole(\App\Enums\UserRole::Instructor))
+                        <li class="nav-item">
+                            <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.*')">
+                                {{ __('Admin Console') }}
+                            </x-nav-link>
+                        </li>
+                    @endif
                 @else
                     <li class="nav-item">
                         <x-nav-link href="{{ route('cases.index') }}" :active="request()->routeIs('cases.*')">

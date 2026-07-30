@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Student;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -34,6 +35,37 @@ class EngineeringOfficeShellTest extends TestCase
         $response->assertSee('Work History');
         $response->assertSee($student->name);
         $response->assertDontSee('View a Sample Incident');
+    }
+
+    public function test_a_plain_student_does_not_see_an_admin_console_link(): void
+    {
+        $student = User::factory()->create();
+
+        $response = $this->actingAs($student)->get('/dashboard');
+
+        $response->assertOk();
+        $response->assertDontSee('Admin Console');
+    }
+
+    public function test_an_admin_sees_an_admin_console_link_on_the_shell(): void
+    {
+        $admin = User::factory()->withRole(UserRole::Admin)->create();
+
+        $response = $this->actingAs($admin)->get('/dashboard');
+
+        $response->assertOk();
+        $response->assertSee('Admin Console');
+        $response->assertSee(route('admin.dashboard'), false);
+    }
+
+    public function test_an_instructor_sees_an_admin_console_link_on_the_shell(): void
+    {
+        $instructor = User::factory()->withRole(UserRole::Instructor)->create();
+
+        $response = $this->actingAs($instructor)->get('/dashboard');
+
+        $response->assertOk();
+        $response->assertSee('Admin Console');
     }
 
     public function test_the_incidents_route_replaces_the_old_cases_placeholder_url(): void
