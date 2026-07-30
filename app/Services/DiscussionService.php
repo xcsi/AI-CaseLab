@@ -14,6 +14,7 @@ use App\Discussion\Support\SystemPromptBuilder;
 use App\Enums\DiscussionStatus;
 use App\Enums\DiscussionTurnRole;
 use App\Enums\DiscussionVerdict;
+use App\Events\DiscussionAccepted;
 use App\Models\CaseAttempt;
 use App\Models\DiscussionSession;
 use App\Models\DiscussionTurn;
@@ -42,9 +43,12 @@ use InvalidArgumentException;
  * check. Every other use of the subject goes through
  * CaseAttemptDiscussionSubject as designed.
  *
- * DiscussionAccepted event firing is deliberately NOT built here — that is
- * Phase 16 Milestone 2, per the roadmap. This milestone only sets session
- * status; nothing subscribes to it yet.
+ * On an Accepted transition, this class fires the subject-agnostic
+ * DiscussionAccepted event (§1.5) and stops — it has no instanceof checks,
+ * no branching on discussable_type, and no knowledge of what (if anything)
+ * listens for the event. Any subject-specific reaction (e.g.
+ * PrefillDiagnosisFromAcceptedDiscussion, scoped to CaseAttempt only) lives
+ * entirely in a listener, never here.
  */
 class DiscussionService
 {
@@ -184,6 +188,8 @@ class DiscussionService
     {
         if ($verdict === DiscussionVerdict::Accept) {
             $session->update(['status' => DiscussionStatus::Accepted->value, 'ended_at' => now()]);
+
+            event(new DiscussionAccepted($session->fresh()));
 
             return;
         }
