@@ -394,18 +394,35 @@ the first release is tagged.
   Deployment Checklist and Release Checklist to the deployment guide.
   No business-logic changes; full suite unchanged at 291/291 passing.
 
-- **Version 2 design — AI Discussion Engine, frozen and not yet implemented:**
-  `docs/13-ai-discussion-engine-design.md` (architecture specification —
-  a provider-agnostic, cost-safe fallback-chain LLM layer defaulting to
-  free/local models; a Subject × Persona extensibility split so future
-  review modes and future subjects are additive, not a redesign; a
-  behavioral contract with golden transcripts and a provider-conformance
-  regression suite, since provider compatibility is a behavioral
-  question as well as an API one) and `docs/14-v2-implementation-roadmap.md`
-  (Phases 13–22, continuing Version 1's phase numbering and process —
-  small reviewable milestones, tests green after every one). No
-  application code changed by this entry; Version 1 (Phases 1–12) is
-  untouched. Full suite unaffected, still passing.
+- **Version 2 — AI Discussion Engine, Phases 13–21 complete:** implements
+  `docs/13-ai-discussion-engine-design.md` in full, per the build sequence
+  in `docs/14-v2-implementation-roadmap.md`. A Socratic AI reviewer
+  (Mentor/Interviewer personas) that challenges a student's investigation
+  before their diagnosis is accepted: `discussion_sessions`/
+  `discussion_turns` schema and domain models (Phase 13); a
+  provider-agnostic, cost-safe fallback-chain LLM client layer
+  (`ChainedLlmClient`/`LlmClientFactory`) defaulting to free/local
+  providers and never silently reaching a paid tier (Phase 14); Mentor/
+  Interviewer personas, system-prompt construction, and structured-output
+  parsing (Phase 15); `DiscussionService`'s four-state state machine
+  (Active → Accepted/EndedByStudent/MaxRoundsReached) with an
+  accept → diagnosis-prefill event (Phase 16); the HTTP layer — routes,
+  controller, Form Requests, rate limiting (Phase 17); the Investigation
+  Workspace's "Engineering Discussion" panel — entry point, chat-style
+  UI, end/accept flow, and an "AI Discussion Unavailable" state for the
+  chain-exhausted case (Phase 18); Performance Review's discussion
+  section and admin case-editor configuration fields (Phase 19);
+  end-to-end `fallback_log` observability, chain-exhaustion logging, and
+  a full-path regression test for the never-silently-spend-money
+  guarantee (Phase 20); and a real, evidence-based provider conformance
+  validation run against Ollama, OpenRouter, and Gemini free tiers,
+  documented in `docs/15-provider-conformance-results.md` (Phase 21).
+  Version 1 (Phases 1–12) preserved completely — the only touchpoint is
+  the three additive, nullable `cases` columns
+  (`discussion_enabled`/`discussion_default_persona`/
+  `discussion_max_rounds`) `docs/13` §9.4 designed for. Full suite:
+  482/482 passing. Phase 22 (Documentation, Deployment Update & Release)
+  is in progress.
 
 ### Known issues
 
