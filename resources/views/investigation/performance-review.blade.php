@@ -32,6 +32,21 @@
     $canReattempt = $case->allow_reattempt;
 
     $formatScore = fn ($value) => \App\Support\ScoreFormatter::trim($value);
+
+    // Engineering Discussion section (docs/13 §11.2, Phase 19 Milestone 1)
+    // — display labels only, computed here to match this view's existing
+    // convention of deriving presentation from raw model data
+    // ($criterionState above does the same for evaluation results).
+    $discussionPersonaLabel = $discussionSession
+        ? (config("discussion_personas.{$discussionSession->persona}.display_name") ?? ucfirst($discussionSession->persona))
+        : null;
+
+    $discussionOutcomeLabel = $discussionSession ? match ($discussionSession->status) {
+        \App\Enums\DiscussionStatus::Accepted => 'Accepted',
+        \App\Enums\DiscussionStatus::EndedByStudent => 'Ended by Student',
+        \App\Enums\DiscussionStatus::MaxRoundsReached => 'Max Rounds Reached',
+        \App\Enums\DiscussionStatus::Active => 'In Progress',
+    } : null;
 @endphp
 
 <x-app-layout>
@@ -121,6 +136,53 @@
                                     @endif
                                 </div>
                             @endforeach
+                        </div>
+                    </div>
+                @endif
+
+                {{-- Engineering Discussion (docs/13 §11.2, Phase 19
+                     Milestone 1) — a sibling card, not nested inside the
+                     rubric breakdown above, which stays exactly as
+                     Version 1 built it. Collapsed by default: this is a
+                     full transcript, and most students checking their
+                     score aren't here to re-read it. --}}
+                @if ($discussionSession)
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header">
+                            <button
+                                type="button"
+                                class="btn btn-link text-decoration-none fw-semibold p-0 d-flex align-items-center justify-content-between w-100"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#discussion-review-collapse"
+                                aria-expanded="false"
+                                aria-controls="discussion-review-collapse"
+                            >
+                                <span>Engineering Discussion</span>
+                                <span class="text-secondary small" aria-hidden="true">&#9662;</span>
+                            </button>
+                        </div>
+                        <div class="collapse" id="discussion-review-collapse">
+                            <div class="card-body">
+                                <dl class="row small mb-3">
+                                    <dt class="col-sm-3 fw-normal text-secondary">Persona</dt>
+                                    <dd class="col-sm-9 mb-1">{{ $discussionPersonaLabel }}</dd>
+                                    <dt class="col-sm-3 fw-normal text-secondary">Outcome</dt>
+                                    <dd class="col-sm-9 mb-1">{{ $discussionOutcomeLabel }}</dd>
+                                    <dt class="col-sm-3 fw-normal text-secondary">Rounds</dt>
+                                    <dd class="col-sm-9 mb-0">{{ $discussionSession->round_count }}</dd>
+                                </dl>
+
+                                <div class="d-flex flex-column gap-2">
+                                    @foreach ($discussionTurns as $turn)
+                                        <div class="p-2 rounded {{ $turn->role->value === 'student' ? 'bg-light' : 'bg-white border' }}">
+                                            <div class="text-secondary small fw-semibold mb-1">
+                                                {{ $turn->role->value === 'student' ? 'You' : 'AI Reviewer' }}
+                                            </div>
+                                            <div style="white-space: pre-line;">{{ $turn->content }}</div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
                         </div>
                     </div>
                 @endif
