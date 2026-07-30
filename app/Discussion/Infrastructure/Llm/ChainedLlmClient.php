@@ -56,4 +56,19 @@ class ChainedLlmClient implements LlmClientInterface
             .(implode(', ', $attemptedTierNames) ?: '(no tiers configured)').'.'
         );
     }
+
+    /**
+     * Read-only introspection of this chain's composition, in order — never
+     * exposes the underlying clients themselves. Exists for testing
+     * LlmClientFactory's output (Phase 14 Milestone 5) and future
+     * observability (Phase 20's fallback_log), not for anything
+     * DiscussionService needs — it depends on LlmClientInterface alone and
+     * has no reason to call this.
+     *
+     * @return array<int, string>
+     */
+    public function tierNames(): array
+    {
+        return array_column($this->tiers, 'name');
+    }
 }
