@@ -97,20 +97,8 @@ class LlmClientFactory
         $provider = config('llm.paid_fallback.provider');
 
         return match ($provider) {
-            'openai' => new OpenAiCompatibleLlmClient(
-                providerName: 'openai',
-                baseUrl: config('llm.openai.base_url'),
-                apiKey: config('llm.openai.api_key'),
-                model: config('llm.openai.model'),
-                maxTokens: config('llm.max_tokens'),
-                supportsStructuredOutput: config('llm.openai.supports_structured_output'),
-            ),
-            'anthropic' => new AnthropicLlmClient(
-                apiKey: config('llm.anthropic.api_key'),
-                model: config('llm.anthropic.model'),
-                maxTokens: config('llm.max_tokens'),
-                supportsStructuredOutput: config('llm.anthropic.supports_structured_output'),
-            ),
+            'openai' => $this->buildOpenAiClient(),
+            'anthropic' => $this->buildAnthropicClient(),
             default => throw new InvalidLlmConfigurationException(
                 "LLM_ALLOW_PAID_FALLBACK is true but LLM_PAID_FALLBACK_PROVIDER "
                 .(is_string($provider) && $provider !== '' ? "(\"{$provider}\")" : '(unset)')
@@ -120,10 +108,59 @@ class LlmClientFactory
         };
     }
 
+    private function buildOpenAiClient(): LlmClientInterface
+    {
+        return new OpenAiCompatibleLlmClient(
+            providerName: 'openai',
+            baseUrl: config('llm.openai.base_url'),
+            apiKey: config('llm.openai.api_key'),
+            model: config('llm.openai.model'),
+            maxTokens: config('llm.max_tokens'),
+            supportsStructuredOutput: config('llm.openai.supports_structured_output'),
+        );
+    }
+
+    private function buildAnthropicClient(): LlmClientInterface
+    {
+        return new AnthropicLlmClient(
+            apiKey: config('llm.anthropic.api_key'),
+            model: config('llm.anthropic.model'),
+            maxTokens: config('llm.max_tokens'),
+            supportsStructuredOutput: config('llm.anthropic.supports_structured_output'),
+        );
+    }
+
     private function isConfigured(string $tier): bool
     {
         $apiKey = config("llm.{$tier}.api_key");
 
         return $apiKey !== null && $apiKey !== '';
+    }
+
+    /**
+     * Builds exactly one named tier's client directly, bypassing both
+     * config-presence gating (isConfigured()) and the paid_fallback.allowed
+     * guard entirely — deliberately, since this exists only for the Phase
+     * 21 provider conformance harness (docs/13 §15.6), a manually-invoked
+     * developer tool that validates a candidate provider *before* it's
+     * trusted enough to add to build()'s chain. It never runs through
+     * DiscussionService or any student-facing request path, so it carries
+     * none of the cost-safety implications build()'s paid-tier gate exists
+     * to enforce — that guarantee is entirely about what the *chain*
+     * (build()) can reach at request time, and this method never touches
+     * the chain.
+     */
+    public function buildSingleTier(string $provider): LlmClientInterface
+    {
+        return match ($provider) {
+            'ollama' => $this->buildOllamaClient(),
+            'openrouter' => $this->buildOpenAiCompatibleClient('openrouter'),
+            'gemini' => $this->buildGeminiClient(),
+            'openai' => $this->buildOpenAiClient(),
+            'anthropic' => $this->buildAnthropicClient(),
+            default => throw new InvalidLlmConfigurationException(
+                "Unknown provider \"{$provider}\" — must be one of: ollama, openrouter, gemini, openai, anthropic."
+            ),
+        };
     }
 }
