@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Models\CaseAttempt;
+use App\Models\DiscussionSession;
 use App\Models\Evaluation;
 use App\Services\EvaluationService;
 use Illuminate\Http\RedirectResponse;
@@ -33,9 +34,13 @@ class PerformanceReviewController extends Controller
 
         $attempt->load(['case', 'diagnosis', 'evaluation.criterionResults.rubricCriterion']);
 
+        $discussionSession = $this->latestDiscussionSession($attempt);
+
         return view('investigation.performance-review', [
             'attempt' => $attempt,
             'caseAverageScore' => $this->caseAverageScore($attempt),
+            'discussionSession' => $discussionSession,
+            'discussionTurns' => $discussionSession?->turns()->orderBy('sequence_order')->get() ?? collect(),
         ]);
     }
 
@@ -57,5 +62,20 @@ class PerformanceReviewController extends Controller
         )->pluck('total_score');
 
         return $scores->count() > 1 ? round((float) $scores->avg(), 1) : null;
+    }
+
+    /**
+     * §11.2's "a completed discussion is visible after the fact" — the
+     * most recent session for this attempt, regardless of outcome (a
+     * student can end without accepting, or hit the round cap, and still
+     * want to see it here), or null when no discussion was ever started
+     * ("no discussion at all" per this milestone's test matrix).
+     */
+    private function latestDiscussionSession(CaseAttempt $attempt): ?DiscussionSession
+    {
+        return DiscussionSession::where('discussable_type', CaseAttempt::class)
+            ->where('discussable_id', $attempt->id)
+            ->latest('started_at')
+            ->first();
     }
 }
