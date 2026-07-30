@@ -31,7 +31,7 @@ return [
     */
 
     'ollama' => [
-        'base_url' => env('LLM_OLLAMA_BASE_URL', 'http://localhost:11434'),
+        'base_url' => env('LLM_OLLAMA_BASE_URL', 'http://localhost:11434/v1'),
         'model' => env('LLM_OLLAMA_MODEL', 'qwen2.5:7b'),
         // Small local models served through Ollama often don't reliably
         // support native tool-calling/JSON-schema output (§1.4.6) -- off by
