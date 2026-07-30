@@ -15,6 +15,7 @@
     :diagnosis-url="route('investigation.diagnosis.create', $attempt)"
     :evidence-viewed-count="$evidenceViewedCount"
     :evidence-total-count="$evidenceTotalCount"
+    :discussion-url="$case->discussion_enabled ? route('investigation.discussion.start', $attempt) : null"
 >
     {{-- Phone gate: below 576px, the workspace opens read-only-by-default
          with an explicit override, per the approved UX spec. --}}
