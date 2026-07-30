@@ -13,6 +13,7 @@ use App\Models\CaseAttempt;
 use App\Models\DiscussionSession;
 use App\Services\DiscussionService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 
 /**
@@ -42,7 +43,11 @@ class DiscussionController extends Controller
             return $this->conflict($e->getMessage());
         } catch (InvalidArgumentException $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 422);
-        } catch (NoLlmProviderAvailableException|LeakedReplyException) {
+        } catch (NoLlmProviderAvailableException $e) {
+            $this->logChainExhausted($e, $attempt);
+
+            return $this->unavailable();
+        } catch (LeakedReplyException) {
             return $this->unavailable();
         }
 
@@ -72,7 +77,11 @@ class DiscussionController extends Controller
             $session = $this->discussions->respond($session, $request->validated('message'));
         } catch (DiscussionNotActiveException $e) {
             return $this->conflict($e->getMessage());
-        } catch (NoLlmProviderAvailableException|LeakedReplyException) {
+        } catch (NoLlmProviderAvailableException $e) {
+            $this->logChainExhausted($e, $attempt, $session);
+
+            return $this->unavailable();
+        } catch (LeakedReplyException) {
             return $this->unavailable();
         }
 
@@ -146,5 +155,29 @@ class DiscussionController extends Controller
             'status' => 'unavailable',
             'message' => 'AI Discussion is temporarily unavailable. This does not affect your investigation or your ability to submit a diagnosis.',
         ], 503);
+    }
+
+    /**
+     * Structured application logging on full chain exhaustion (§1.4.5,
+     * Phase 20 Milestone 2) — for operational visibility only, never
+     * surfaced to the student (that's §11.5's job, already handled by
+     * unavailable()'s generic response above). Deliberately scoped to
+     * NoLlmProviderAvailableException specifically, not LeakedReplyException
+     * — a leak block is a different event class this milestone doesn't
+     * cover. The exception's own message already names which tiers were
+     * tried and why each failed (ChainedLlmClient, Phase 14/20).
+     */
+    private function logChainExhausted(
+        NoLlmProviderAvailableException $e,
+        CaseAttempt $attempt,
+        ?DiscussionSession $session = null,
+    ): void {
+        Log::warning('Engineering Discussion: LLM fallback chain exhausted.', [
+            'attempt_id' => $attempt->id,
+            'case_id' => $attempt->case_id,
+            'discussion_session_id' => $session?->id,
+            'persona' => $session?->persona,
+            'reason' => $e->getMessage(),
+        ]);
     }
 }
