@@ -5,6 +5,7 @@ namespace Tests\Feature\Discussion;
 use App\Discussion\Contracts\LlmClientInterface;
 use App\Discussion\LlmTurnResult;
 use App\Discussion\SystemPrompt;
+use App\Discussion\Exceptions\LlmProviderUnavailableException;
 use App\Discussion\Testing\FakeLlmClient;
 use App\Enums\DiscussionVerdict;
 use RuntimeException;
@@ -61,5 +62,33 @@ class FakeLlmClientTest extends TestCase
         $this->expectExceptionMessage('no scripted response queued');
 
         $fake->complete(new SystemPrompt('system'), [], 'hello');
+    }
+
+    public function test_it_throws_a_queued_exception_instead_of_returning(): void
+    {
+        $fake = new FakeLlmClient();
+        $fake->willThrow(new LlmProviderUnavailableException('tier unavailable'));
+
+        $this->expectException(LlmProviderUnavailableException::class);
+        $this->expectExceptionMessage('tier unavailable');
+
+        $fake->complete(new SystemPrompt('system'), [], 'hello');
+    }
+
+    public function test_willreturn_and_willthrow_can_be_mixed_in_the_same_queue(): void
+    {
+        $fake = new FakeLlmClient();
+        $success = new LlmTurnResult('reply', DiscussionVerdict::Continue);
+        $fake->willThrow(new LlmProviderUnavailableException('first attempt fails'))->willReturn($success);
+
+        try {
+            $fake->complete(new SystemPrompt('system'), [], 'first message');
+            $this->fail('Expected LlmProviderUnavailableException was not thrown.');
+        } catch (LlmProviderUnavailableException) {
+            // expected
+        }
+
+        $this->assertSame($success, $fake->complete(new SystemPrompt('system'), [], 'second message'));
+        $this->assertSame(2, $fake->callCount());
     }
 }

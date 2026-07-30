@@ -6,6 +6,7 @@ use App\Discussion\Contracts\LlmClientInterface;
 use App\Discussion\LlmTurnResult;
 use App\Discussion\SystemPrompt;
 use RuntimeException;
+use Throwable;
 
 /**
  * The LlmClientInterface implementation bound in the testing environment
@@ -15,14 +16,15 @@ use RuntimeException;
  * testing philosophy the Repository interfaces already established for
  * Version 1.
  *
- * Usage in a test: queue exactly the LlmTurnResult(s) a scenario needs via
- * willReturn(), let the code under test call complete() as many times as it
- * will, then assert on recordedCalls() if the test cares what was actually
- * sent.
+ * Usage in a test: queue exactly the LlmTurnResult(s) (willReturn()) or
+ * exceptions (willThrow() — added in Phase 14 Milestone 4 so ChainedLlmClient's
+ * multi-tier failure scenarios are scriptable) a scenario needs, let the
+ * code under test call complete() as many times as it will, then assert on
+ * recordedCalls() if the test cares what was actually sent.
  */
 class FakeLlmClient implements LlmClientInterface
 {
-    /** @var array<int, LlmTurnResult> */
+    /** @var array<int, LlmTurnResult|Throwable> */
     private array $queuedResponses = [];
 
     /** @var array<int, array{systemPrompt: SystemPrompt, conversationHistory: array<int, array{role: string, content: string}>, newMessage: string}> */
@@ -31,6 +33,13 @@ class FakeLlmClient implements LlmClientInterface
     public function willReturn(LlmTurnResult $result): static
     {
         $this->queuedResponses[] = $result;
+
+        return $this;
+    }
+
+    public function willThrow(Throwable $exception): static
+    {
+        $this->queuedResponses[] = $exception;
 
         return $this;
     }
@@ -46,11 +55,17 @@ class FakeLlmClient implements LlmClientInterface
         if ($this->queuedResponses === []) {
             throw new RuntimeException(
                 'FakeLlmClient::complete() was called with no scripted response queued — '
-                .'the test scenario needs one more willReturn() call than it has.'
+                .'the test scenario needs one more willReturn()/willThrow() call than it has.'
             );
         }
 
-        return array_shift($this->queuedResponses);
+        $next = array_shift($this->queuedResponses);
+
+        if ($next instanceof Throwable) {
+            throw $next;
+        }
+
+        return $next;
     }
 
     /**
