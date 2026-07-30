@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Discussion\Contracts\LlmClientInterface;
+use App\Discussion\Infrastructure\Llm\LlmClientFactory;
 use App\Discussion\Testing\FakeLlmClient;
 use Illuminate\Support\ServiceProvider;
 
@@ -15,11 +16,14 @@ class DiscussionServiceProvider extends ServiceProvider
     {
         if ($this->app->environment('testing')) {
             $this->app->singleton(LlmClientInterface::class, FakeLlmClient::class);
+
+            return;
         }
 
-        // Production binding — LlmClientFactory resolving to the cost-safe
-        // ordered fallback chain (docs/13-ai-discussion-engine-design.md
-        // §1.4) — arrives in Phase 14 Milestone 5.
+        $this->app->singleton(
+            LlmClientInterface::class,
+            fn () => (new LlmClientFactory())->build(),
+        );
     }
 
     /**
