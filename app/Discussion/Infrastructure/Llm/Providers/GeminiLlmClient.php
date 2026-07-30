@@ -4,7 +4,10 @@ namespace App\Discussion\Infrastructure\Llm\Providers;
 
 use App\Discussion\Contracts\LlmClientInterface;
 use App\Discussion\Exceptions\LlmProviderUnavailableException;
+use App\Discussion\Exceptions\StructuredOutputParseException;
+use App\Discussion\Infrastructure\Llm\Support\StructuredOutputParser;
 use App\Discussion\LlmTurnResult;
+use App\Discussion\Support\TurnClassifier;
 use App\Discussion\SystemPrompt;
 use App\Enums\DiscussionVerdict;
 use Illuminate\Http\Client\ConnectionException;
@@ -25,6 +28,8 @@ class GeminiLlmClient implements LlmClientInterface
         private readonly string $model,
         private readonly int $maxTokens,
         private readonly bool $supportsStructuredOutput,
+        private readonly StructuredOutputParser $structuredOutputParser = new StructuredOutputParser(),
+        private readonly TurnClassifier $turnClassifier = new TurnClassifier(),
     ) {}
 
     public function complete(SystemPrompt $systemPrompt, array $conversationHistory, string $newMessage): LlmTurnResult
@@ -68,7 +73,7 @@ class GeminiLlmClient implements LlmClientInterface
         // not "try the next tier" — propagates as-is, per §1.4.3.
         $response->throw();
 
-        return $this->parseHappyPath($response->json('candidates.0.content.parts.0.text') ?? '');
+        return $this->toLlmTurnResult($response->json('candidates.0.content.parts.0.text') ?? '');
     }
 
     private function endpoint(): string
@@ -77,20 +82,31 @@ class GeminiLlmClient implements LlmClientInterface
     }
 
     /**
-     * Minimal, native-JSON-only decode of the model's structured reply —
-     * deliberately the happy path only, matching
-     * OpenAiCompatibleLlmClient's identical scoping note. Replaced by
-     * StructuredOutputParser (Phase 14 Milestone 6).
+     * Delegates interpretation entirely to StructuredOutputParser +
+     * TurnClassifier, matching OpenAiCompatibleLlmClient's identical
+     * scoping note — this class's only remaining job is the Gemini
+     * response envelope's own text extraction (already done by the
+     * caller).
      */
-    private function parseHappyPath(string $content): LlmTurnResult
+    private function toLlmTurnResult(string $rawContent): LlmTurnResult
     {
-        $decoded = json_decode($content, true);
+        try {
+            $parsed = $this->structuredOutputParser->parse($rawContent);
+        } catch (StructuredOutputParseException) {
+            return new LlmTurnResult(
+                replyText: $rawContent,
+                verdict: DiscussionVerdict::Continue,
+                internalNote: 'structured parse failed, verdict defaulted',
+                provider: 'gemini',
+                model: $this->model,
+            );
+        }
 
         return new LlmTurnResult(
-            replyText: $decoded['reply_text'] ?? $content,
-            verdict: DiscussionVerdict::tryFrom($decoded['verdict'] ?? '') ?? DiscussionVerdict::Continue,
-            evidenceReferenced: $decoded['evidence_referenced'] ?? null,
-            internalNote: $decoded['internal_note'] ?? null,
+            replyText: $parsed->replyText,
+            verdict: $this->turnClassifier->classify($parsed),
+            evidenceReferenced: $parsed->evidenceReferenced,
+            internalNote: $parsed->internalNote,
             provider: 'gemini',
             model: $this->model,
         );

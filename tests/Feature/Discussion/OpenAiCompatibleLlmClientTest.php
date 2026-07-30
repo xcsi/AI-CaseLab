@@ -157,6 +157,28 @@ class OpenAiCompatibleLlmClientTest extends TestCase
         $client->complete(new SystemPrompt('system'), [], 'hello');
     }
 
+    public function test_an_unparseable_reply_falls_back_to_a_safe_default_instead_of_throwing(): void
+    {
+        // Proves the real StructuredOutputParser + TurnClassifier
+        // integration end to end (Phase 14 Milestone 6 catch-up), not just
+        // in isolation: a model that ignores the JSON contract entirely
+        // must degrade this one turn, not crash the request.
+        Http::fake([
+            'https://openrouter.ai/api/v1/chat/completions' => Http::response([
+                'choices' => [
+                    ['message' => ['content' => 'Sure! I think the gateway timeout is the issue here.']],
+                ],
+            ], 200),
+        ]);
+
+        $result = $this->openRouterClient()->complete(new SystemPrompt('system'), [], 'hello');
+
+        $this->assertSame('Sure! I think the gateway timeout is the issue here.', $result->replyText);
+        $this->assertSame(DiscussionVerdict::Continue, $result->verdict);
+        $this->assertSame('structured parse failed, verdict defaulted', $result->internalNote);
+        $this->assertSame('openrouter', $result->provider);
+    }
+
     private function openRouterClient(): OpenAiCompatibleLlmClient
     {
         return new OpenAiCompatibleLlmClient(
