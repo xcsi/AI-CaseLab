@@ -4,7 +4,10 @@ namespace App\Discussion\Infrastructure\Llm\Providers;
 
 use App\Discussion\Contracts\LlmClientInterface;
 use App\Discussion\Exceptions\LlmProviderUnavailableException;
+use App\Discussion\Exceptions\StructuredOutputParseException;
+use App\Discussion\Infrastructure\Llm\Support\StructuredOutputParser;
 use App\Discussion\LlmTurnResult;
+use App\Discussion\Support\TurnClassifier;
 use App\Discussion\SystemPrompt;
 use App\Enums\DiscussionVerdict;
 use Illuminate\Http\Client\ConnectionException;
@@ -28,6 +31,8 @@ class OpenAiCompatibleLlmClient implements LlmClientInterface
         private readonly string $model,
         private readonly int $maxTokens,
         private readonly bool $supportsStructuredOutput,
+        private readonly StructuredOutputParser $structuredOutputParser = new StructuredOutputParser(),
+        private readonly TurnClassifier $turnClassifier = new TurnClassifier(),
     ) {}
 
     public function complete(SystemPrompt $systemPrompt, array $conversationHistory, string $newMessage): LlmTurnResult
@@ -70,7 +75,7 @@ class OpenAiCompatibleLlmClient implements LlmClientInterface
         // it propagate as the real error it is (§1.4.3).
         $response->throw();
 
-        return $this->parseHappyPath($response->json('choices.0.message.content') ?? '');
+        return $this->toLlmTurnResult($response->json('choices.0.message.content') ?? '');
     }
 
     /**
@@ -84,23 +89,35 @@ class OpenAiCompatibleLlmClient implements LlmClientInterface
     }
 
     /**
-     * Minimal, native-JSON-only decode of the model's structured reply —
-     * deliberately the happy path only. The full native/fallback contract
-     * from §1.4.6 (including the strict-JSON-prompt fallback and
-     * repair-retry for models without reliable structured output) is
-     * StructuredOutputParser's job (Phase 14 Milestone 6), which will
-     * replace this method's body once it exists; the request/response
-     * transport this milestone builds doesn't change when that happens.
+     * Delegates interpretation entirely to StructuredOutputParser +
+     * TurnClassifier — this class's only remaining job is extracting the
+     * raw text content from its own response envelope (already done by the
+     * caller) and, on a parse failure, applying the documented safe
+     * fallback (§1.4.6): degrade this one turn, never crash the state
+     * machine. This fallback-construction step is intentionally duplicated
+     * across all three provider clients rather than pushed into
+     * StructuredOutputParser — a defaulted verdict is exactly the kind of
+     * inference that class must never do.
      */
-    private function parseHappyPath(string $content): LlmTurnResult
+    private function toLlmTurnResult(string $rawContent): LlmTurnResult
     {
-        $decoded = json_decode($content, true);
+        try {
+            $parsed = $this->structuredOutputParser->parse($rawContent);
+        } catch (StructuredOutputParseException) {
+            return new LlmTurnResult(
+                replyText: $rawContent,
+                verdict: DiscussionVerdict::Continue,
+                internalNote: 'structured parse failed, verdict defaulted',
+                provider: $this->providerName,
+                model: $this->model,
+            );
+        }
 
         return new LlmTurnResult(
-            replyText: $decoded['reply_text'] ?? $content,
-            verdict: DiscussionVerdict::tryFrom($decoded['verdict'] ?? '') ?? DiscussionVerdict::Continue,
-            evidenceReferenced: $decoded['evidence_referenced'] ?? null,
-            internalNote: $decoded['internal_note'] ?? null,
+            replyText: $parsed->replyText,
+            verdict: $this->turnClassifier->classify($parsed),
+            evidenceReferenced: $parsed->evidenceReferenced,
+            internalNote: $parsed->internalNote,
             provider: $this->providerName,
             model: $this->model,
         );
