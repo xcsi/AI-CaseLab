@@ -417,12 +417,13 @@ the first release is tagged.
   guarantee (Phase 20); and a real, evidence-based provider conformance
   validation run against Ollama, OpenRouter, and Gemini free tiers,
   documented in `docs/15-provider-conformance-results.md` (Phase 21).
-  Version 1 (Phases 1–12) preserved completely — the only touchpoint is
-  the three additive, nullable `cases` columns
+  Version 1 (Phases 1–12) preserved completely — every touchpoint traces
+  to `docs/13`'s own design: the additive, nullable `cases` columns
   (`discussion_enabled`/`discussion_default_persona`/
-  `discussion_max_rounds`) `docs/13` §9.4 designed for. Full suite:
-  482/482 passing. Phase 22 (Documentation, Deployment Update & Release)
-  is in progress.
+  `discussion_max_rounds`, §9.3) and the three explicitly-designed UI
+  integration points (§11.1–§11.3 — Investigation Workspace, Performance
+  Review, Admin Case Editor). Full suite: 482/482 passing. Phase 22
+  (Documentation, Deployment Update & Release) is in progress.
 
 ### Known issues
 

@@ -4,7 +4,7 @@ Sequences the frozen architecture in `docs/13-ai-discussion-engine-design.md` in
 
 **Binding rules for every phase below, per direct instruction:**
 
-- Version 1 is preserved completely — no phase modifies a Version 1 file unless it is one of the two explicitly-designed additive touchpoints (`cases.discussion_enabled`/`discussion_default_persona`/`discussion_max_rounds`, and nothing else). Any phase that seems to need more than that is a signal to stop and revisit `docs/13`, not to proceed.
+- Version 1 is preserved completely — no phase modifies a Version 1 file beyond the touchpoints `docs/13` itself designates: the additive `cases` column set (§9.3 — `discussion_enabled`/`discussion_default_persona`/`discussion_max_rounds`) and the three explicitly-designed UI integration points (§11.1–§11.3 — Investigation Workspace, Performance Review, Admin Case Editor). Any phase that seems to need more than that is a signal to stop and revisit `docs/13`, not to proceed.
 - Commits stay small and reviewable — one milestone below is one commit (or a small handful of tightly related commits), not one phase in a single commit.
 - The full automated test suite stays green after every milestone, not just every phase. A milestone that leaves tests red is not done.
 - One feature at a time — a milestone does not bundle unrelated work because it happened to be convenient to touch the same file.
@@ -224,7 +224,7 @@ Every phase cites the `docs/13` sections it implements, so implementation traces
 1. Update `docs/12-deployment-guide.md` with LLM provider setup (the `.env.example` block from §1.4.7), an Ollama installation note, and a pointer to Phase 21's conformance results.
 2. `CHANGELOG.md` entry summarizing Version 2 (mirroring the "Roadmap Phase N, Milestone M" entry style already established); `README.md` status/roadmap table update.
 3. Full manual smoke test of the complete Version 2 feature end to end (mirroring the Phase 12 smoke-test discipline exactly), plus a full automated-suite run.
-4. Final review: confirm the full test suite is still 100% green, and confirm no Version 1 file was modified beyond the two designed touchpoints (`cases`'s three new columns, nothing else) — the literal check that "preserve Version 1 completely" held for the whole of Version 2, not just in intent.
+4. Final review: confirm the full test suite is still 100% green, and confirm no Version 1 file was modified beyond the touchpoints `docs/13` itself designates (§9.3's additive `cases` columns and §11.1–§11.3's UI integration points) — the literal check that "preserve Version 1 completely" held for the whole of Version 2, not just in intent.
 
 **Dependencies:** Phase 21.
 
