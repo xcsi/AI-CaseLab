@@ -167,6 +167,7 @@ class DiscussionService
             'completion_tokens' => $result->completionTokens,
             'provider' => $result->provider,
             'model' => $result->model,
+            'fallback_log' => $result->fallbackLog,
         ]);
 
         $session->increment('round_count');

@@ -51,7 +51,16 @@ class ChainedLlmClientTest extends TestCase
 
         $actual = $chain->complete(new SystemPrompt('system'), [], 'hello');
 
-        $this->assertSame($result, $actual);
+        // Not assertSame($result, $actual) — a fallback occurred, so
+        // ChainedLlmClient wraps the tier's result in a new LlmTurnResult
+        // carrying fallback_log (Phase 20 Milestone 1); the reply content
+        // itself is unchanged.
+        $this->assertSame($result->replyText, $actual->replyText);
+        $this->assertSame($result->verdict, $actual->verdict);
+        $this->assertSame(
+            [['tier' => 'ollama', 'result' => 'ollama unreachable']],
+            $actual->fallbackLog
+        );
         // Deterministic order: tier 1 was actually tried (and failed)
         // before tier 2 was ever touched, not just "eventually returned".
         $this->assertSame(1, $tier1->callCount());
@@ -76,7 +85,18 @@ class ChainedLlmClientTest extends TestCase
             ['name' => 'gemini_free', 'client' => $tier3],
         ]);
 
-        $this->assertSame($result, $chain->complete(new SystemPrompt('system'), [], 'hello'));
+        $actual = $chain->complete(new SystemPrompt('system'), [], 'hello');
+
+        // Not assertSame($result, $actual) — two fallbacks occurred; see
+        // the identical note in the two-tier fallback test above.
+        $this->assertSame($result->replyText, $actual->replyText);
+        $this->assertSame(
+            [
+                ['tier' => 'ollama', 'result' => 'ollama unreachable'],
+                ['tier' => 'openrouter_free', 'result' => 'openrouter rate limited'],
+            ],
+            $actual->fallbackLog
+        );
         $this->assertSame(1, $tier1->callCount());
         $this->assertSame(1, $tier2->callCount());
         $this->assertSame(1, $tier3->callCount());
