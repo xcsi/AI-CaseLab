@@ -22,10 +22,22 @@ class StoreCaseRequest extends FormRequest
     /**
      * Checkboxes omit the field entirely when unchecked, so normalize it
      * here rather than making the column non-nullable-but-sometimes-absent.
+     * The discussion fields get the same "empty means absent" treatment:
+     * a blank select/number input arrives as "", not omitted, which would
+     * otherwise fail `nullable` + `Rule::in`/`integer` outright.
      */
     protected function prepareForValidation(): void
     {
-        $this->merge(['allow_reattempt' => $this->boolean('allow_reattempt')]);
+        $this->merge([
+            'allow_reattempt' => $this->boolean('allow_reattempt'),
+            'discussion_enabled' => $this->boolean('discussion_enabled'),
+            'discussion_default_persona' => $this->filled('discussion_default_persona')
+                ? $this->input('discussion_default_persona')
+                : null,
+            'discussion_max_rounds' => $this->filled('discussion_max_rounds')
+                ? $this->input('discussion_max_rounds')
+                : null,
+        ]);
     }
 
     /**
@@ -49,6 +61,13 @@ class StoreCaseRequest extends FormRequest
             'estimated_minutes' => ['required', 'integer', 'min:1'],
             'model_solution_summary' => ['nullable', 'string'],
             'allow_reattempt' => ['boolean'],
+            'discussion_enabled' => ['boolean'],
+            'discussion_default_persona' => [
+                'nullable', 'string',
+                Rule::in(array_keys(config('discussion_personas'))),
+                Rule::requiredIf(fn () => $this->boolean('discussion_enabled')),
+            ],
+            'discussion_max_rounds' => ['nullable', 'integer', 'min:1'],
         ];
     }
 }

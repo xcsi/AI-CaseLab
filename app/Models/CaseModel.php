@@ -45,6 +45,18 @@ class CaseModel extends Model
         'model_solution_summary',
         'max_score',
         'allow_reattempt',
+        // Deliberately excluded from $fillable until Phase 19 Milestone 2
+        // (docs/13 §11.3) — before that admin form existed, there was no
+        // validated/authorized path meant to set these, so mass-assigning
+        // them was blocked entirely rather than trusted to controller
+        // discipline (found the hard way during Phase 18 manual testing:
+        // an ad hoc tinker update() silently no-op'd). Now that
+        // StoreCaseRequest/UpdateCaseRequest validate and CasePolicy
+        // authorizes every write that reaches these fields, mass
+        // assignment is exactly the intended path.
+        'discussion_enabled',
+        'discussion_default_persona',
+        'discussion_max_rounds',
     ];
 
     protected function casts(): array
@@ -54,6 +66,7 @@ class CaseModel extends Model
             'status' => CaseStatus::class,
             'allow_reattempt' => 'boolean',
             'max_score' => 'decimal:2',
+            'discussion_enabled' => 'boolean',
         ];
     }
 
