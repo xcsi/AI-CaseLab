@@ -46,6 +46,51 @@ class DiscussionControllerTest extends TestCase
             ->assertForbidden();
     }
 
+    /**
+     * Milestone 1's guest/cross-student tests proved this for `start` only.
+     * Phase 12's own authorization audit found that exact gap in Version 1
+     * -- "asserted student/instructor were forbidden ... but never proved
+     * it per controller, relying implicitly on the route group" -- so each
+     * remaining action gets its own explicit proof here rather than
+     * inferring it from start()'s coverage, even though all four routes
+     * share the identical attempt.owner middleware.
+     */
+    public function test_a_different_student_cannot_respond_to_someone_elses_attempt_discussion(): void
+    {
+        [$owner, $attempt] = $this->ownedAttempt();
+        $this->fake()->willReturn($this->continue('Challenge.'));
+        $this->actingAs($owner)->postJson(route('investigation.discussion.start', $attempt), ['opening_position' => 'Opening.']);
+
+        $otherStudent = User::factory()->create();
+        $this->actingAs($otherStudent)
+            ->postJson(route('investigation.discussion.respond', $attempt), ['message' => 'Trying to jump in.'])
+            ->assertForbidden();
+    }
+
+    public function test_a_different_student_cannot_end_someone_elses_attempt_discussion(): void
+    {
+        [$owner, $attempt] = $this->ownedAttempt();
+        $this->fake()->willReturn($this->continue('Challenge.'));
+        $this->actingAs($owner)->postJson(route('investigation.discussion.start', $attempt), ['opening_position' => 'Opening.']);
+
+        $otherStudent = User::factory()->create();
+        $this->actingAs($otherStudent)
+            ->postJson(route('investigation.discussion.end', $attempt))
+            ->assertForbidden();
+    }
+
+    public function test_a_different_student_cannot_view_someone_elses_attempt_discussion(): void
+    {
+        [$owner, $attempt] = $this->ownedAttempt();
+        $this->fake()->willReturn($this->continue('Challenge.'));
+        $this->actingAs($owner)->postJson(route('investigation.discussion.start', $attempt), ['opening_position' => 'Opening.']);
+
+        $otherStudent = User::factory()->create();
+        $this->actingAs($otherStudent)
+            ->getJson(route('investigation.discussion.show', $attempt))
+            ->assertForbidden();
+    }
+
     public function test_start_creates_a_session_and_returns_it_as_json(): void
     {
         [$student, $attempt] = $this->ownedAttempt();
