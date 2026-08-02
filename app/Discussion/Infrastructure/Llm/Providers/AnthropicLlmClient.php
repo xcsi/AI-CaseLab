@@ -22,6 +22,18 @@ use Illuminate\Support\Facades\Http;
  */
 class AnthropicLlmClient implements LlmClientInterface
 {
+    /**
+     * Some providers/models can return a genuinely empty content string
+     * rather than malformed JSON (docs/15 §2.2 — a "reasoning" model
+     * burning its whole max_tokens budget before ever writing content,
+     * observed in real use). Falling back to that raw (empty) string left
+     * the student staring at a blank reply bubble with no signal anything
+     * went wrong. This placeholder only replaces a truly empty
+     * (post-trim) raw reply — verdict, internal_note, and every other
+     * part of the existing degrade-gracefully fallback are unchanged.
+     */
+    private const EMPTY_REPLY_PLACEHOLDER = "The AI's reply couldn't be read this round.";
+
     public function __construct(
         private readonly string $apiKey,
         private readonly string $model,
@@ -93,7 +105,7 @@ class AnthropicLlmClient implements LlmClientInterface
             $parsed = $this->structuredOutputParser->parse($rawContent);
         } catch (StructuredOutputParseException) {
             return new LlmTurnResult(
-                replyText: $rawContent,
+                replyText: trim($rawContent) === '' ? self::EMPTY_REPLY_PLACEHOLDER : $rawContent,
                 verdict: DiscussionVerdict::Continue,
                 internalNote: 'structured parse failed, verdict defaulted',
                 provider: 'anthropic',

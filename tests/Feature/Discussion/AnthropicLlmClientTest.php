@@ -108,6 +108,28 @@ class AnthropicLlmClientTest extends TestCase
         $this->client()->complete(new SystemPrompt('system'), [], 'hello');
     }
 
+    public function test_a_truly_empty_reply_falls_back_to_a_placeholder_message_instead_of_a_blank_bubble(): void
+    {
+        // A real observed case (docs/15 §2.2): a "reasoning" model can burn
+        // its whole max_tokens budget and return an empty content string —
+        // not malformed JSON, genuinely nothing. The blank-string fallback
+        // used to reach the student as an empty reply bubble.
+        Http::fake([
+            'https://api.anthropic.com/v1/messages' => Http::response([
+                'content' => [
+                    ['type' => 'text', 'text' => ''],
+                ],
+            ], 200),
+        ]);
+
+        $result = $this->client()->complete(new SystemPrompt('system'), [], 'hello');
+
+        $this->assertSame("The AI's reply couldn't be read this round.", $result->replyText);
+        $this->assertSame(DiscussionVerdict::Continue, $result->verdict);
+        $this->assertSame('structured parse failed, verdict defaulted', $result->internalNote);
+        $this->assertSame('anthropic', $result->provider);
+    }
+
     private function client(): AnthropicLlmClient
     {
         return new AnthropicLlmClient(

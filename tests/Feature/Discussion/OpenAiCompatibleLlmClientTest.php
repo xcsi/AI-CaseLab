@@ -179,6 +179,46 @@ class OpenAiCompatibleLlmClientTest extends TestCase
         $this->assertSame('openrouter', $result->provider);
     }
 
+    public function test_a_truly_empty_reply_falls_back_to_a_placeholder_message_instead_of_a_blank_bubble(): void
+    {
+        // A real observed case (docs/15 §2.2): a "reasoning" model can burn
+        // its whole max_tokens budget and return an empty content string —
+        // not malformed JSON, genuinely nothing. The blank-string fallback
+        // used to reach the student as an empty reply bubble.
+        Http::fake([
+            'https://openrouter.ai/api/v1/chat/completions' => Http::response([
+                'choices' => [
+                    ['message' => ['content' => '']],
+                ],
+            ], 200),
+        ]);
+
+        $result = $this->openRouterClient()->complete(new SystemPrompt('system'), [], 'hello');
+
+        $this->assertSame("The AI's reply couldn't be read this round.", $result->replyText);
+        $this->assertSame(DiscussionVerdict::Continue, $result->verdict);
+        $this->assertSame('structured parse failed, verdict defaulted', $result->internalNote);
+        $this->assertSame('openrouter', $result->provider);
+    }
+
+    public function test_a_whitespace_only_reply_falls_back_to_a_placeholder_message(): void
+    {
+        // Proves the check is trim()-based, not a literal empty-string
+        // check — whitespace-only content is just as unreadable as "".
+        Http::fake([
+            'https://openrouter.ai/api/v1/chat/completions' => Http::response([
+                'choices' => [
+                    ['message' => ['content' => "  \n  "]],
+                ],
+            ], 200),
+        ]);
+
+        $result = $this->openRouterClient()->complete(new SystemPrompt('system'), [], 'hello');
+
+        $this->assertSame("The AI's reply couldn't be read this round.", $result->replyText);
+        $this->assertSame(DiscussionVerdict::Continue, $result->verdict);
+    }
+
     private function openRouterClient(): OpenAiCompatibleLlmClient
     {
         return new OpenAiCompatibleLlmClient(
