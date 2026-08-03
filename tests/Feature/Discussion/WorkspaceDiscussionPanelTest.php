@@ -12,7 +12,9 @@ use Tests\TestCase;
  * Proves the Engineering Discussion chat-style panel markup for Phase 18
  * Milestone 2, per docs/13-ai-discussion-engine-design.md §11.1: a
  * dark-panel modal (reusing the evidence viewers' visual language), a
- * round counter, an "AI is thinking…" state, and the fetch-driven forms
+ * round counter, a "Reviewing your reasoning…" state (re-worded from "AI is
+ * thinking…" in the Design System v1 alignment, Milestone 5, to read as a
+ * calm engineering review rather than a chatbot), and the fetch-driven forms
  * that drive DiscussionController's start/respond endpoints. "End
  * Discussion" (Milestone 3) and the dedicated unavailable-state UI
  * (Milestone 4) are out of scope and not asserted here. Kept as its own
@@ -34,9 +36,11 @@ class WorkspaceDiscussionPanelTest extends TestCase
         $response->assertOk();
         $response->assertSee('id="discussion-panel-modal"', false);
         $response->assertSee('id="discussion-round-counter"', false);
+        $response->assertSee('id="discussion-persona-badge"', false);
+        $response->assertSee('modal-dialog-scrollable', false);
         $response->assertSee('id="discussion-transcript"', false);
         $response->assertSee('id="discussion-thinking"', false);
-        $response->assertSee('AI is thinking');
+        $response->assertSee('Reviewing your reasoning');
         $response->assertSee('id="discussion-open-form"', false);
         $response->assertSee('id="discussion-open-input"', false);
         $response->assertSee('id="discussion-reply-form"', false);
