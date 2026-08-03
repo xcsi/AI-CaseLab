@@ -13,7 +13,7 @@
             <div class="alert alert-success">{{ session('status') }}</div>
         @endif
 
-        <div class="card shadow-sm">
+        <div class="card">
             <div class="card-body p-0">
                 <table class="table table-hover mb-0 align-middle">
                     <thead>

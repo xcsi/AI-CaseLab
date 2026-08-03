@@ -11,20 +11,20 @@
 
     $criterionState = function ($result) {
         if ($result->isPendingManualReview()) {
-            return ['icon' => '&hellip;', 'class' => 'text-secondary', 'pending' => true];
+            return ['icon' => 'clock', 'class' => 'text-secondary', 'pending' => true];
         }
 
         $score = $result->effectiveScore();
 
         if ($result->max_score > 0 && $score >= $result->max_score) {
-            return ['icon' => '&check;', 'class' => 'text-success'];
+            return ['icon' => 'check', 'class' => 'text-success'];
         }
 
         if ($score <= 0) {
-            return ['icon' => '&#10007;', 'class' => 'text-danger'];
+            return ['icon' => 'x', 'class' => 'text-danger'];
         }
 
-        return ['icon' => '&#9680;', 'class' => 'text-warning'];
+        return ['icon' => 'dot', 'class' => 'text-warning'];
     };
 
     $pendingManualReviewCount = $evaluation?->metadata['pending_manual_review_count'] ?? 0;
@@ -32,6 +32,21 @@
     $canReattempt = $case->allow_reattempt;
 
     $formatScore = fn ($value) => \App\Support\ScoreFormatter::trim($value);
+
+    // Engineering Discussion section (docs/13 §11.2, Phase 19 Milestone 1)
+    // — display labels only, computed here to match this view's existing
+    // convention of deriving presentation from raw model data
+    // ($criterionState above does the same for evaluation results).
+    $discussionPersonaLabel = $discussionSession
+        ? (config("discussion_personas.{$discussionSession->persona}.display_name") ?? ucfirst($discussionSession->persona))
+        : null;
+
+    $discussionOutcomeLabel = $discussionSession ? match ($discussionSession->status) {
+        \App\Enums\DiscussionStatus::Accepted => 'Accepted',
+        \App\Enums\DiscussionStatus::EndedByStudent => 'Ended by Student',
+        \App\Enums\DiscussionStatus::MaxRoundsReached => 'Max Rounds Reached',
+        \App\Enums\DiscussionStatus::Active => 'In Progress',
+    } : null;
 @endphp
 
 <x-app-layout>
@@ -43,7 +58,7 @@
     <div class="container py-4 pb-5">
         <div class="row g-4">
             <div class="col-lg-8">
-                <div class="card shadow-sm mb-4">
+                <div class="card mb-4">
                     <div class="card-body">
                         @if ($hasEvaluation)
                             <div class="d-flex flex-wrap align-items-baseline gap-3">
@@ -86,7 +101,7 @@
                 </div>
 
                 @if ($hasEvaluation && $evaluation->criterionResults->isNotEmpty())
-                    <div class="card shadow-sm mb-4">
+                    <div class="card mb-4">
                         <div class="card-header fw-semibold">Per-Criterion Breakdown</div>
                         <div class="card-body">
                             @foreach ($evaluation->criterionResults as $result)
@@ -94,7 +109,7 @@
                                 <div class="py-2 {{ ! $loop->last ? 'border-bottom' : '' }}">
                                     <div class="d-flex justify-content-between align-items-start gap-3">
                                         <div class="d-flex gap-2">
-                                            <span class="{{ $state['class'] }}" aria-hidden="true">{!! $state['icon'] !!}</span>
+                                            <x-icon :name="$state['icon']" :class="$state['class']" />
                                             <span>{{ $result->rubricCriterion->title }}</span>
                                         </div>
                                         <span class="text-secondary text-nowrap">
@@ -125,7 +140,54 @@
                     </div>
                 @endif
 
-                <div class="card shadow-sm mb-4">
+                {{-- Engineering Discussion (docs/13 §11.2, Phase 19
+                     Milestone 1) — a sibling card, not nested inside the
+                     rubric breakdown above, which stays exactly as
+                     Version 1 built it. Collapsed by default: this is a
+                     full transcript, and most students checking their
+                     score aren't here to re-read it. --}}
+                @if ($discussionSession)
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <button
+                                type="button"
+                                class="btn btn-link text-decoration-none fw-semibold p-0 d-flex align-items-center justify-content-between w-100"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#discussion-review-collapse"
+                                aria-expanded="false"
+                                aria-controls="discussion-review-collapse"
+                            >
+                                <span>Engineering Discussion</span>
+                                <x-icon name="chevron-down" size="14" class="text-secondary" />
+                            </button>
+                        </div>
+                        <div class="collapse" id="discussion-review-collapse">
+                            <div class="card-body">
+                                <dl class="row small mb-3">
+                                    <dt class="col-sm-3 fw-normal text-secondary">Persona</dt>
+                                    <dd class="col-sm-9 mb-1">{{ $discussionPersonaLabel }}</dd>
+                                    <dt class="col-sm-3 fw-normal text-secondary">Outcome</dt>
+                                    <dd class="col-sm-9 mb-1">{{ $discussionOutcomeLabel }}</dd>
+                                    <dt class="col-sm-3 fw-normal text-secondary">Rounds</dt>
+                                    <dd class="col-sm-9 mb-0">{{ $discussionSession->round_count }}</dd>
+                                </dl>
+
+                                <div class="d-flex flex-column gap-2">
+                                    @foreach ($discussionTurns as $turn)
+                                        <div class="p-2 rounded {{ $turn->role->value === 'student' ? 'bg-light' : 'bg-white border' }}">
+                                            <div class="text-secondary small fw-semibold mb-1">
+                                                {{ $turn->role->value === 'student' ? 'You' : 'AI Reviewer' }}
+                                            </div>
+                                            <div style="white-space: pre-line;">{{ $turn->content }}</div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                <div class="card mb-4">
                     <div class="card-header fw-semibold">What Actually Happened</div>
                     <div class="card-body">
                         @if ($case->model_solution_summary)

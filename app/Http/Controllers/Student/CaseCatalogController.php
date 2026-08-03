@@ -53,11 +53,22 @@ class CaseCatalogController extends Controller
 
         $cases = $query->paginate(9)->withQueryString();
 
-        return view('incidents.index', [
+        $data = [
             'cases' => $cases,
             'categories' => Category::orderBy('name')->get(),
             'anyPublishedCases' => CaseModel::published()->exists(),
-        ]);
+        ];
+
+        // Progressive enhancement: the filters form and pagination links are
+        // fetched via JS (resources/views/incidents/index.blade.php) and swap
+        // in just this partial instead of a full page reload. The filtering/
+        // sorting query above is identical either way — this only changes
+        // which view wraps the same $cases result.
+        if ($request->ajax()) {
+            return view('incidents._results', $data);
+        }
+
+        return view('incidents.index', $data);
     }
 
     public function show(CaseModel $case): View

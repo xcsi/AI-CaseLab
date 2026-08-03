@@ -7,6 +7,8 @@
 
         <title>{{ $title ?? 'Investigation Workspace' }} — {{ config('app.name', 'AI CaseLab') }}</title>
 
+        <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
@@ -36,6 +38,17 @@
                     <span class="text-secondary small text-nowrap" id="workspace-progress" data-viewed="{{ $evidenceViewedCount }}" data-total="{{ $evidenceTotalCount }}">
                         {{ $evidenceViewedCount }}/{{ $evidenceTotalCount }} viewed
                     </span>
+                    @if ($discussionUrl)
+                        {{-- Engineering Discussion entry point (Version 2, Phase 18 Milestone 1) —
+                             a peer action to Submit Diagnosis, positioned just before it per the
+                             approved design (docs/13 §11.1). A plain button, not a link: it opens
+                             the discussion panel in place via JS (Phase 18 Milestone 2), not a page
+                             navigation — no click handler wired up yet, this milestone is the entry
+                             point only. --}}
+                        <button type="button" id="workspace-discussion-start-button" class="btn btn-outline-primary btn-sm" data-discussion-start-url="{{ $discussionUrl }}">
+                            Start Engineering Discussion
+                        </button>
+                    @endif
                     <a href="{{ $diagnosisUrl }}" class="btn btn-primary btn-sm">
                         Submit Diagnosis
                     </a>

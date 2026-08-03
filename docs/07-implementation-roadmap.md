@@ -4,6 +4,8 @@ This roadmap sequences the approved architecture (`docs/03-database-design.md`, 
 
 Tracked as Tasks #1–#12 (linear dependency chain: each phase is blocked by the one before it).
 
+**Version 1 status: complete (Phases 1–12).** Version 2 (the AI Discussion Engine) continues phase numbering from 13 onward in `docs/14-v2-implementation-roadmap.md`, sequencing the frozen architecture in `docs/13-ai-discussion-engine-design.md`. This document is preserved as-is as the historical record of how Version 1 was built.
+
 ---
 
 ## Phase 1 — Laravel Project Setup

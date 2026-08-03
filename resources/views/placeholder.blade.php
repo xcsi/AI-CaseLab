@@ -8,9 +8,9 @@
     </x-slot>
 
     <div class="container py-4">
-        <div class="card shadow-sm">
-            <div class="card-body text-center text-secondary py-5">
-                <p class="mb-0">{{ $title }} is coming in a later phase of the build.</p>
+        <div class="card">
+            <div class="card-body">
+                <x-empty-state :message="$title . ' is coming in a later phase of the build.'" />
             </div>
         </div>
     </div>

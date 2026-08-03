@@ -13,7 +13,7 @@
         {{-- Top-line KPI cards --}}
         <div class="row g-3 mb-4">
             <div class="col-md-3">
-                <div class="card shadow-sm h-100">
+                <div class="card h-100">
                     <div class="card-body">
                         <div class="text-secondary small text-uppercase">Completion Rate</div>
                         <div class="fs-2 fw-semibold">{{ $pct($summary['completion']['completion_rate_percent']) }}</div>
@@ -22,7 +22,7 @@
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card shadow-sm h-100">
+                <div class="card h-100">
                     <div class="card-body">
                         <div class="text-secondary small text-uppercase">Average Score</div>
                         <div class="fs-2 fw-semibold">{{ $pct($summary['score_distribution']['average_percent']) }}</div>
@@ -31,7 +31,7 @@
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card shadow-sm h-100">
+                <div class="card h-100">
                     <div class="card-body">
                         <div class="text-secondary small text-uppercase">Avg Completion Time</div>
                         <div class="fs-2 fw-semibold">{{ $num($summary['completion_time']['average_minutes']) }}<span class="fs-6 text-secondary">{{ $summary['completion_time']['average_minutes'] === null ? '' : ' min' }}</span></div>
@@ -40,7 +40,7 @@
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card shadow-sm h-100">
+                <div class="card h-100">
                     <div class="card-body">
                         <div class="text-secondary small text-uppercase">Re-attempt Rate</div>
                         <div class="fs-2 fw-semibold">{{ $pct($summary['reattempts']['reattempt_rate_percent']) }}</div>
@@ -53,7 +53,7 @@
         <div class="row g-4 mb-4">
             {{-- Completion statistics --}}
             <div class="col-lg-6">
-                <div class="card shadow-sm h-100">
+                <div class="card h-100">
                     <div class="card-header fw-semibold">Completion Statistics</div>
                     <div class="card-body">
                         @php $totalStarted = $summary['completion']['started']; @endphp
@@ -61,7 +61,7 @@
                             <p class="text-secondary text-center py-4 mb-0">No attempts recorded yet.</p>
                         @else
                             <div class="progress mb-3" style="height: 1.5rem" role="progressbar" aria-label="Attempt status breakdown">
-                                @foreach (['in_progress' => 'bg-info', 'submitted' => 'bg-warning', 'completed' => 'bg-success', 'abandoned' => 'bg-dark'] as $status => $color)
+                                @foreach (['in_progress' => 'bg-primary', 'submitted' => 'bg-warning', 'completed' => 'bg-success', 'abandoned' => 'bg-dark'] as $status => $color)
                                     @if ($summary['completion']['by_status'][$status] > 0)
                                         <div class="progress-bar {{ $color }}" style="width: {{ $summary['completion']['by_status'][$status] / $totalStarted * 100 }}%">
                                             {{ $summary['completion']['by_status'][$status] }}
@@ -70,7 +70,7 @@
                                 @endforeach
                             </div>
                             <dl class="row mb-0 small">
-                                <dt class="col-8 fw-normal"><span class="badge text-bg-info">&nbsp;</span> In Progress</dt>
+                                <dt class="col-8 fw-normal"><span class="badge text-bg-primary">&nbsp;</span> In Progress</dt>
                                 <dd class="col-4 text-end">{{ $summary['completion']['by_status']['in_progress'] }}</dd>
                                 <dt class="col-8 fw-normal"><span class="badge text-bg-warning">&nbsp;</span> Submitted</dt>
                                 <dd class="col-4 text-end">{{ $summary['completion']['by_status']['submitted'] }}</dd>
@@ -88,7 +88,7 @@
 
             {{-- Score distribution --}}
             <div class="col-lg-6">
-                <div class="card shadow-sm h-100">
+                <div class="card h-100">
                     <div class="card-header fw-semibold">Score Distribution</div>
                     <div class="card-body">
                         @php $evaluatedCount = $summary['score_distribution']['evaluated_count']; @endphp
@@ -123,7 +123,7 @@
         <div class="row g-4 mb-4">
             {{-- Hint usage --}}
             <div class="col-lg-6">
-                <div class="card shadow-sm h-100">
+                <div class="card h-100">
                     <div class="card-header fw-semibold">Hint Usage</div>
                     <div class="card-body p-0">
                         <div class="d-flex justify-content-between p-3 border-bottom small text-secondary">
@@ -158,7 +158,7 @@
 
             {{-- Average completion time / re-attempt statistics --}}
             <div class="col-lg-6">
-                <div class="card shadow-sm h-100">
+                <div class="card h-100">
                     <div class="card-header fw-semibold">Completion Time &amp; Re-attempts</div>
                     <div class="card-body">
                         <dl class="row mb-0 small">
@@ -179,7 +179,7 @@
         </div>
 
         {{-- Category breakdown --}}
-        <div class="card shadow-sm">
+        <div class="card">
             <div class="card-header fw-semibold">Category Breakdown</div>
             <div class="card-body p-0">
                 <table class="table table-hover mb-0 align-middle">

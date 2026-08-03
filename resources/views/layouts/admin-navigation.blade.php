@@ -8,7 +8,7 @@
 </nav>
 
 <div class="collapse d-md-block bg-dark text-white" id="admin-sidebar">
-    <div class="d-flex flex-column p-3" style="min-height: 100vh;">
+    <div class="d-flex flex-column admin-sidebar-inner p-3">
         <a href="{{ route('admin.dashboard') }}" class="d-none d-md-flex align-items-center gap-2 mb-4 text-white text-decoration-none fs-5">
             <x-application-logo class="text-white" style="width: 1.75rem; height: 1.75rem;" />
             AI CaseLab Admin
@@ -43,6 +43,11 @@
             <li class="nav-item">
                 <a href="{{ route('admin.analytics.index') }}" class="nav-link text-white {{ request()->routeIs('admin.analytics.*') ? 'active' : '' }}">
                     {{ __('Analytics') }}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('dashboard') }}" class="nav-link text-white {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                    {{ __('Student Workspace') }}
                 </a>
             </li>
         </ul>

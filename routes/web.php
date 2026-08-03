@@ -12,6 +12,7 @@ use App\Http\Controllers\Student\CaseAttemptController;
 use App\Http\Controllers\Student\CaseCatalogController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use App\Http\Controllers\Student\DiagnosisController;
+use App\Http\Controllers\Student\DiscussionController;
 use App\Http\Controllers\Student\EvidenceController;
 use App\Http\Controllers\Student\HintController as StudentHintController;
 use App\Http\Controllers\Student\NotebookController;
@@ -86,6 +87,22 @@ Route::middleware(['auth', 'attempt.owner'])->prefix('investigation/{attempt}')-
     // creates a second diagnosis.
     Route::get('/report', [DiagnosisController::class, 'create'])->name('investigation.diagnosis.create');
     Route::post('/report', [DiagnosisController::class, 'store'])->name('investigation.diagnosis.store');
+
+    // Engineering Discussion (Version 2, Phase 17 Milestone 1) — routes per
+    // docs/13-ai-discussion-engine-design.md §10's table exactly, scoped by
+    // {attempt} like every other action in this group since there's no
+    // separate {session} URL parameter; DiscussionController derives the
+    // relevant session from the attempt itself. No UI consumes these yet
+    // (Phase 18).
+    Route::post('/discussion', [DiscussionController::class, 'start'])->name('investigation.discussion.start');
+    Route::get('/discussion', [DiscussionController::class, 'show'])->name('investigation.discussion.show');
+    // Rate limited per §8's cost-abuse mitigation (Phase 17 Milestone 4) —
+    // the messages endpoint specifically, since it's the one that triggers
+    // an LLM call on every request.
+    Route::post('/discussion/messages', [DiscussionController::class, 'respond'])
+        ->middleware('throttle:discussion-messages')
+        ->name('investigation.discussion.respond');
+    Route::post('/discussion/end', [DiscussionController::class, 'end'])->name('investigation.discussion.end');
 });
 
 // Performance Review (Milestone 7) — the final screen in the investigation

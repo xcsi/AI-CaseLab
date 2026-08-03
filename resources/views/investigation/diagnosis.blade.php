@@ -5,6 +5,12 @@
     $evidenceViewedCount = $viewedEvidenceItemIds->count();
     $minutesSpent = (int) $attempt->started_at->diffInMinutes(now());
     $citedIds = old('cited_evidence_ids', $viewedEvidenceItemIds->all());
+    // Accept -> diagnosis-prefill (docs/13 §11.1, Phase 18 Milestone 3):
+    // an accepted Engineering Discussion's position pre-fills this field,
+    // editable like any other old()-restored value, deferring to old()
+    // first so a validation-error redisplay never clobbers what the
+    // student already edited.
+    $rootCauseText = old('root_cause_text', $acceptedDiscussionPosition ?? '');
 
     $formatPenalty = fn ($value) => \App\Support\ScoreFormatter::trim($value);
 @endphp
@@ -17,6 +23,8 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
         <title>Submit Diagnosis — {{ config('app.name', 'AI CaseLab') }}</title>
+
+        <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
@@ -48,7 +56,7 @@
                                 rows="5"
                                 class="form-control @error('root_cause_text') is-invalid @enderror"
                                 required
-                            >{{ old('root_cause_text') }}</textarea>
+                            >{{ $rootCauseText }}</textarea>
                             @error('root_cause_text')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -188,6 +196,7 @@
                 // so a double-click or a slow response can't double-post.
                 form.addEventListener('submit', () => {
                     confirmSubmit.disabled = true;
+                    confirmSubmit.classList.add('btn-loading');
                     confirmSubmit.textContent = 'Submitting…';
                     document.querySelectorAll('.diagnosis-submit-trigger').forEach((button) => {
                         button.disabled = true;

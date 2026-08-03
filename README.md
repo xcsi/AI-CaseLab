@@ -2,7 +2,7 @@
 
 **An Interactive Software Engineering Training Platform** — a virtual engineering office where students investigate realistic production incidents (login failures, API 500s, database performance issues, payment failures) using support tickets, logs, code, and data, instead of reading theory.
 
-> **Status:** All 12 roadmap phases complete. Full student and admin journeys work end to end against real data; 291 automated tests passing; deployment-ready (see [`docs/12-deployment-guide.md`](docs/12-deployment-guide.md)). See [Roadmap](#roadmap) below and the `[Unreleased]` section of [`CHANGELOG.md`](CHANGELOG.md) for the complete build history.
+> **Status:** Version 1 (all 12 roadmap phases) complete and deployment-ready (see [`docs/12-deployment-guide.md`](docs/12-deployment-guide.md)). Version 2 — the AI Discussion Engine — Phases 13–21 complete; Phase 22 (Documentation, Deployment Update & Release) in progress. 482 automated tests passing. See [Roadmap](#roadmap) below and the `[Unreleased]` section of [`CHANGELOG.md`](CHANGELOG.md) for the complete build history.
 
 ## Why This Exists
 
@@ -43,6 +43,10 @@ All design and process documentation lives in [`docs/`](docs) and is the source 
 | [`08-implementation-rules.md`](docs/08-implementation-rules.md) | Coding standards and delivery process for this project |
 | [`09-workplace-terminology.md`](docs/09-workplace-terminology.md) | The "Virtual Engineering Office" UI language glossary |
 | [`10-git-workflow.md`](docs/10-git-workflow.md) | Branch strategy, commit convention, milestone checklist |
+| [`11-implementation-summary.md`](docs/11-implementation-summary.md) | Phase 1–5 implementation summary reference |
+| [`12-deployment-guide.md`](docs/12-deployment-guide.md) | Production deployment, environment/migration verification, checklists |
+| [`13-ai-discussion-engine-design.md`](docs/13-ai-discussion-engine-design.md) | **Version 2** — frozen architecture spec for the AI Discussion Engine |
+| [`14-v2-implementation-roadmap.md`](docs/14-v2-implementation-roadmap.md) | **Version 2** — the Phase 13–22 build plan |
 
 ## Roadmap
 
@@ -64,6 +68,25 @@ All design and process documentation lives in [`docs/`](docs) and is the source 
 **Note on Phase 7:** the student-facing evidence viewers (log, code, DB snapshot, API response, screenshot) are fully built. The admin authoring UI for evidence was a deliberate scope trade-off and was not built — evidence exists via seeders (see `DemoDataSeeder`) rather than a CMS form. This is a documented, known limitation, not an oversight; see `docs/12-deployment-guide.md` §5.
 
 Full detail (objectives, dependencies, deliverables) for each phase is in [`docs/07-implementation-roadmap.md`](docs/07-implementation-roadmap.md).
+
+### Version 2 — AI Discussion Engine (Phases 13–21 complete; Phase 22 in progress)
+
+A Socratic AI reviewer (Mentor Review / Technical Interview personas) that challenges a student's investigation before their diagnosis is accepted, rather than a chatbot or an auto-grader. Architecture is frozen in [`docs/13-ai-discussion-engine-design.md`](docs/13-ai-discussion-engine-design.md); build sequence is [`docs/14-v2-implementation-roadmap.md`](docs/14-v2-implementation-roadmap.md).
+
+| Phase | Name | Status |
+|---|---|---|
+| 13 | Discussion Engine Foundations (Schema, Models, Contracts) | Done |
+| 14 | Provider-Agnostic LLM Client Layer | Done |
+| 15 | Personas & System Prompt Construction | Done |
+| 16 | DiscussionService & State Machine | Done |
+| 17 | HTTP Layer: Routes, Controllers, Requests | Done |
+| 18 | Investigation Workspace UI | Done |
+| 19 | Performance Review Integration & Admin Configuration | Done |
+| 20 | Cost-Safety & Observability Hardening | Done |
+| 21 | Provider Behavioral Conformance Validation | Done |
+| 22 | Documentation, Deployment Update & Release | In progress |
+
+Version 1 (Phases 1–12) is preserved completely and unmodified by Version 2's design — see `docs/13` §9.4 for the specific database boundary.
 
 ## Getting Started
 

@@ -6,7 +6,7 @@
 
 <div class="row g-4">
     <div class="col-lg-8">
-        <div class="card shadow-sm mb-4">
+        <div class="card mb-4">
             <div class="card-header fw-semibold">Basic Information</div>
             <div class="card-body">
                 <div class="mb-3">
@@ -68,7 +68,7 @@
     </div>
 
     <div class="col-lg-4">
-        <div class="card shadow-sm mb-4">
+        <div class="card mb-4">
             <div class="card-header fw-semibold">Settings</div>
             <div class="card-body">
                 <div class="mb-3">
@@ -111,8 +111,46 @@
             </div>
         </div>
 
+        {{-- Engineering Discussion (docs/13 §11.3, Phase 19 Milestone 2) —
+             grouped near the Publish-workflow controls below, following
+             this form's existing conventions: the allow-reattempt
+             checkbox pattern above, and the estimated-minutes number
+             input pattern for the numeric override. --}}
+        <div class="card mb-4">
+            <div class="card-header fw-semibold">Engineering Discussion</div>
+            <div class="card-body">
+                <div class="form-check mb-3">
+                    <input type="checkbox" class="form-check-input" id="case-discussion-enabled" name="discussion_enabled" value="1"
+                        @checked(old('discussion_enabled', $case?->discussion_enabled ?? false)) @disabled($readOnly)>
+                    <label class="form-check-label" for="case-discussion-enabled">Enable Engineering Discussion</label>
+                </div>
+
+                <div class="mb-3">
+                    <x-input-label for="case-discussion-default-persona" value="Default Persona" />
+                    <select id="case-discussion-default-persona" name="discussion_default_persona" class="form-select mt-1" @disabled($readOnly)>
+                        <option value="">Select a persona&hellip;</option>
+                        @foreach (config('discussion_personas') as $personaKey => $personaConfig)
+                            <option value="{{ $personaKey }}" @selected(old('discussion_default_persona', $case?->discussion_default_persona) === $personaKey)>
+                                {{ $personaConfig['display_name'] }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <div class="form-text mt-0 mb-1">Required to enable Engineering Discussion.</div>
+                    <x-input-error :messages="$errors->get('discussion_default_persona')" class="mt-2" />
+                </div>
+
+                <div class="mb-0">
+                    <x-input-label for="case-discussion-max-rounds" value="Max Rounds Override" />
+                    <div class="form-text mt-0 mb-1">Leave blank to use the selected persona's default.</div>
+                    <x-text-input type="number" id="case-discussion-max-rounds" name="discussion_max_rounds" class="mt-1"
+                        min="1" value="{{ old('discussion_max_rounds', $case?->discussion_max_rounds) }}" :disabled="$readOnly" />
+                    <x-input-error :messages="$errors->get('discussion_max_rounds')" class="mt-2" />
+                </div>
+            </div>
+        </div>
+
         @if ($case && ! $readOnly && $case->status === App\Enums\CaseStatus::Draft)
-            <div class="card shadow-sm mb-4">
+            <div class="card mb-4">
                 <div class="card-header fw-semibold">Publish</div>
                 <div class="card-body">
                     @if ($publishErrors)

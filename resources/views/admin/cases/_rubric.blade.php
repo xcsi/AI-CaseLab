@@ -3,7 +3,7 @@
     $totalWeight = $criteria->sum('weight');
 @endphp
 
-<div class="card shadow-sm mb-4">
+<div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
         <span class="fw-semibold">Rubric</span>
         @unless ($readOnly)
