@@ -24,13 +24,13 @@
         @endif
 
         @if ($evaluation->reviewed_at)
-            <div class="alert alert-info">
+            <div class="alert alert-primary">
                 Previously reviewed by {{ $evaluation->reviewer?->name ?? 'an instructor' }}
                 {{ $evaluation->reviewed_at->diffForHumans() }}. Submitting again updates that review.
             </div>
         @endif
 
-        <div class="card shadow-sm mb-4">
+        <div class="card mb-4">
             <div class="card-header fw-semibold">Submitted Diagnosis</div>
             <div class="card-body">
                 <div class="mb-3">
@@ -52,7 +52,7 @@
             @csrf
             @method('PUT')
 
-            <div class="card shadow-sm mb-4">
+            <div class="card mb-4">
                 <div class="card-header fw-semibold">Per-Criterion Scoring</div>
                 <div class="card-body">
                     @foreach ($evaluation->criterionResults as $result)
@@ -108,7 +108,7 @@
                 </div>
             </div>
 
-            <div class="card shadow-sm mb-4">
+            <div class="card mb-4">
                 <div class="card-header fw-semibold">Overall Comment</div>
                 <div class="card-body">
                     <textarea name="comment" rows="3" class="form-control @error('comment') is-invalid @enderror"

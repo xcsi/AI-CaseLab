@@ -29,7 +29,7 @@
             <div class="alert alert-danger">{{ $message }}</div>
         @enderror
 
-        <div class="card shadow-sm">
+        <div class="card">
             <div class="card-body p-0">
                 <table class="table table-hover mb-0 align-middle">
                     <thead>

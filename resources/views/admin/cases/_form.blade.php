@@ -6,7 +6,7 @@
 
 <div class="row g-4">
     <div class="col-lg-8">
-        <div class="card shadow-sm mb-4">
+        <div class="card mb-4">
             <div class="card-header fw-semibold">Basic Information</div>
             <div class="card-body">
                 <div class="mb-3">
@@ -68,7 +68,7 @@
     </div>
 
     <div class="col-lg-4">
-        <div class="card shadow-sm mb-4">
+        <div class="card mb-4">
             <div class="card-header fw-semibold">Settings</div>
             <div class="card-body">
                 <div class="mb-3">
@@ -116,7 +116,7 @@
              this form's existing conventions: the allow-reattempt
              checkbox pattern above, and the estimated-minutes number
              input pattern for the numeric override. --}}
-        <div class="card shadow-sm mb-4">
+        <div class="card mb-4">
             <div class="card-header fw-semibold">Engineering Discussion</div>
             <div class="card-body">
                 <div class="form-check mb-3">
@@ -150,7 +150,7 @@
         </div>
 
         @if ($case && ! $readOnly && $case->status === App\Enums\CaseStatus::Draft)
-            <div class="card shadow-sm mb-4">
+            <div class="card mb-4">
                 <div class="card-header fw-semibold">Publish</div>
                 <div class="card-body">
                     @if ($publishErrors)

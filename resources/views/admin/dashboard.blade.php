@@ -31,7 +31,7 @@
         {{-- Case status stat cards --}}
         <div class="row g-3 mb-4">
             <div class="col-md-4">
-                <div class="card shadow-sm h-100">
+                <div class="card h-100">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
@@ -45,7 +45,7 @@
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card shadow-sm h-100">
+                <div class="card h-100">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
@@ -59,7 +59,7 @@
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card shadow-sm h-100">
+                <div class="card h-100">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
@@ -77,7 +77,7 @@
         <div class="row g-4 mb-4">
             {{-- Needs attention --}}
             <div class="col-lg-7">
-                <div class="card shadow-sm h-100">
+                <div class="card h-100">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <span class="fw-semibold">Needs Attention</span>
                         <span class="badge text-bg-warning">{{ $needsAttention->count() }}</span>
@@ -106,7 +106,7 @@
 
             {{-- Case status overview --}}
             <div class="col-lg-5">
-                <div class="card shadow-sm h-100">
+                <div class="card h-100">
                     <div class="card-header fw-semibold">Case Status Overview</div>
                     <div class="card-body">
                         @if ($totalCases === 0)
@@ -142,7 +142,7 @@
         <div class="row g-4">
             {{-- Recent activity --}}
             <div class="col-lg-7">
-                <div class="card shadow-sm h-100">
+                <div class="card h-100">
                     <div class="card-header fw-semibold">Recent Activity</div>
                     <div class="card-body p-0">
                         @forelse ($recentActivity as $entry)
@@ -159,7 +159,7 @@
 
             {{-- Category statistics --}}
             <div class="col-lg-5">
-                <div class="card shadow-sm h-100">
+                <div class="card h-100">
                     <div class="card-header fw-semibold">Category Statistics</div>
                     <div class="card-body p-0">
                         <table class="table table-hover mb-0 align-middle">

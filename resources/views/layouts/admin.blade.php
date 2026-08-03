@@ -7,6 +7,8 @@
 
         <title>{{ config('app.name', 'AI CaseLab') }} — Admin</title>
 
+        <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
@@ -15,6 +17,8 @@
         @vite(['resources/sass/app.scss', 'resources/js/app.js'])
     </head>
     <body>
+        <a href="#main-content" class="visually-hidden-focusable">Skip to content</a>
+
         <div class="d-md-flex min-vh-100">
             <div class="flex-shrink-0" style="width: 100%; max-width: 240px;">
                 @include('layouts.admin-navigation')
@@ -37,7 +41,7 @@
                     </header>
                 @endisset
 
-                <main class="p-4">
+                <main class="p-4" id="main-content">
                     {{ $slot }}
                 </main>
             </div>

@@ -2,7 +2,7 @@
     $hints = $case->hints;
 @endphp
 
-<div class="card shadow-sm mb-4">
+<div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
         <span class="fw-semibold">Hints</span>
         @unless ($readOnly)
@@ -31,11 +31,11 @@
                             <td class="text-end text-nowrap">
                                 <form method="POST" action="{{ route('admin.hints.move-up', $hint) }}" class="d-inline">
                                     @csrf
-                                    <button type="submit" class="btn btn-sm btn-outline-secondary" title="Move up" @disabled($index === 0)>&uarr;</button>
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary" aria-label="Move up" title="Move up" @disabled($index === 0)><x-icon name="arrow-up" size="14" /></button>
                                 </form>
                                 <form method="POST" action="{{ route('admin.hints.move-down', $hint) }}" class="d-inline">
                                     @csrf
-                                    <button type="submit" class="btn btn-sm btn-outline-secondary" title="Move down" @disabled($index === $hints->count() - 1)>&darr;</button>
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary" aria-label="Move down" title="Move down" @disabled($index === $hints->count() - 1)><x-icon name="arrow-down" size="14" /></button>
                                 </form>
                                 <button type="button" class="btn btn-sm btn-outline-secondary"
                                     onclick="openEditHintModal({{ $hint->id }}, @js($hint->content), {{ (float) $hint->score_penalty }})">

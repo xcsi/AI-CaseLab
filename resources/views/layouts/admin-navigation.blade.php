@@ -45,6 +45,11 @@
                     {{ __('Analytics') }}
                 </a>
             </li>
+            <li class="nav-item">
+                <a href="{{ route('dashboard') }}" class="nav-link text-white {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                    {{ __('Student Workspace') }}
+                </a>
+            </li>
         </ul>
 
         <hr class="text-white-50">
