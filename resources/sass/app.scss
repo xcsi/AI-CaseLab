@@ -1,6 +1,194 @@
 @import "variables";
 @import "bootstrap/scss/bootstrap";
 
+// Design System v1 plain-CSS tokens — spacing/shadow scale and the dark
+// "Night" instrument-panel palette used by the evidence viewer and
+// Engineering Discussion below. Colors here are unchanged values, just
+// named: this is a formalization of what already shipped, not a redesign.
+:root {
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+    --space-12: 3rem;
+    --space-16: 4rem;
+
+    --radius-sm: #{$border-radius-sm};
+    --radius: #{$border-radius};
+    --radius-lg: #{$border-radius-lg};
+
+    // Shadow is the exception, not the default — reserved for things that
+    // float above the page (dropdowns, modals), never cards/panels.
+    --shadow-sm: 0 2px 6px rgba(18, 20, 28, 0.10);
+    --shadow-md: 0 8px 24px rgba(18, 20, 28, 0.18);
+
+    --night-deep: #14141f;
+    --night: #1e1e2e;
+    --night-raised: #2a2d3f;
+    --night-raised-alt: #33354a;
+    --night-border: #3a3f55;
+    --night-muted: #8890a6;
+    --night-text: #d4d4e0;
+    --night-danger: #ff6b6b;
+    --night-warning: #f0b429;
+    --night-highlight: #ffd64f;
+    --night-highlight-wash: rgba(255, 214, 79, 0.15);
+    --night-success-bg: #1f3a2e;
+    --night-success-border: #3a6a52;
+    --night-neutral-bg: #23273a;
+    --night-neutral-border: #3a3f55;
+}
+
+// Design System v1 — buttons & form controls (Milestone 2; extended to
+// every custom, non-.btn interactive control in the Milestone 7
+// accessibility audit — evidence explorer items, evidence tabs, and the
+// hint-unlock button are real <button> elements with all their own click
+// handling, so they need the same crisp ring, not just Bootstrap's .btn).
+//
+// Focus: Bootstrap's default focus ring is a blurred box-shadow glow with
+// no gap between the ring and the control. The spec calls for a crisp,
+// offset ring instead, so buttons/inputs/selects get their own box-shadow
+// suppressed and a real `outline` + `outline-offset` substituted on
+// :focus-visible (keyboard/programmatic focus only, not every mouse
+// click). Left untouched: nav-links, pagination, accordion, etc. still
+// use Bootstrap's own focus ring — fine for now, out of this milestone's
+// scope.
+.btn,
+.form-control,
+.form-select,
+.evidence-explorer-item,
+.evidence-tab-select,
+.evidence-tab-close,
+.hint-unlock-btn {
+    &:focus {
+        box-shadow: none;
+    }
+
+    &:focus-visible {
+        outline: 2px solid $primary;
+        outline-offset: 2px;
+        box-shadow: none;
+    }
+}
+
+// "Secondary" button per the spec: Paper/white fill, a Slate-300 border,
+// Ink text — not Bootstrap's default outline-secondary, which inverts to
+// a solid gray fill on hover. Overridden via Bootstrap 5.3's per-component
+// CSS custom properties rather than fighting the outline-button mixin.
+// This is the app's most-used secondary action style already
+// (.btn-outline-secondary), so the override applies sitewide in one place.
+.btn-outline-secondary {
+    --bs-btn-color: #{$gray-700};
+    --bs-btn-border-color: #{$gray-300};
+    --bs-btn-hover-color: #{$gray-900};
+    --bs-btn-hover-bg: #{$gray-100};
+    --bs-btn-hover-border-color: #{$gray-400};
+    --bs-btn-active-color: #{$gray-900};
+    --bs-btn-active-bg: #{$gray-100};
+    --bs-btn-active-border-color: #{$gray-400};
+}
+
+// "Ghost" button per the spec: transparent until hovered, for toolbar/icon
+// actions. No current call site uses it yet — introduced here so later
+// milestones (icon rollout, cards/nav chrome) have it available instead of
+// reaching for .btn-link (which is styled as a hyperlink, a different
+// thing) or another one-off transparent-button class.
+.btn-ghost {
+    --bs-btn-color: #{$gray-900};
+    --bs-btn-bg: transparent;
+    --bs-btn-border-color: transparent;
+    --bs-btn-hover-color: #{$gray-900};
+    --bs-btn-hover-bg: #{$gray-100};
+    --bs-btn-hover-border-color: transparent;
+    --bs-btn-active-color: #{$gray-900};
+    --bs-btn-active-bg: #{$gray-100};
+    --bs-btn-active-border-color: transparent;
+}
+
+// Clickable cards (Milestone 3) — e.g. the Assigned Incidents catalog, an
+// <a class="card"> wrapping the whole tile. Per the spec: hover darkens the
+// border only, no lift/shadow-pop. Scoped to `a.card` specifically so static,
+// non-interactive cards (admin dashboard stat cards, etc.) get no hover
+// affordance implying they're clickable when they aren't.
+a.card:hover {
+    border-color: $gray-300;
+}
+
+// Empty states (Milestone 4) — icon + one factual sentence + optional Ghost
+// action, centered in the panel it belongs to, never the whole page. The
+// `-compact` modifier is for narrow contexts (e.g. the Evidence Explorer
+// sidebar) so the same component doesn't force full-page proportions into
+// a 260px-wide column.
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 3rem 1rem;
+    color: $gray-500;
+}
+
+.empty-state-compact {
+    padding: 0.75rem 0.25rem;
+}
+
+.empty-state-icon {
+    color: $gray-400;
+    margin-bottom: 0.75rem;
+}
+
+.empty-state-compact .empty-state-icon {
+    margin-bottom: 0.4rem;
+}
+
+.empty-state-message {
+    margin: 0 0 0.75rem;
+    font-size: 0.9375rem;
+}
+
+.empty-state-compact .empty-state-message {
+    font-size: 0.8rem;
+    margin-bottom: 0;
+}
+
+// Button-level loading state (Milestone 4) — a thin 2px ring spinner, per
+// the spec, reserved for an in-flight action (e.g. "Submitting…"), never a
+// full-page overlay. White ring on .btn-primary's solid fill for contrast;
+// this class isn't used on light-background buttons in this app yet, so no
+// dark-on-light variant is defined until one is actually needed.
+.btn-loading {
+    position: relative;
+    padding-left: 2.25rem;
+
+    &::before {
+        content: "";
+        position: absolute;
+        left: 0.85rem;
+        top: 50%;
+        width: 14px;
+        height: 14px;
+        margin-top: -7px;
+        border: 2px solid rgba(255, 255, 255, 0.4);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: btn-loading-spin 0.6s linear infinite;
+    }
+}
+
+@keyframes btn-loading-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .btn-loading::before {
+        animation: none;
+    }
+}
+
 // Bootstrap's utilities API ships min-vw-100/min-vh-100 but no generic
 // min-width/min-height utilities (that's a Tailwind convention, not
 // Bootstrap's) — the workspace flex layout depends on min-w-0/min-h-0 to let
@@ -58,7 +246,7 @@
     background: none;
     border: none;
     padding: 0.4rem 0.5rem;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     font-size: 0.85rem;
     cursor: pointer;
 
@@ -87,8 +275,8 @@
 }
 
 .evidence-viewed-check {
+    display: inline-flex;
     color: $success;
-    font-weight: 700;
     width: 1em;
 }
 
@@ -120,6 +308,8 @@
 }
 
 .evidence-tab-close {
+    display: inline-flex;
+    align-items: center;
     background: none;
     border: none;
     padding: 0 0.2rem;
@@ -135,13 +325,13 @@
 .evidence-code-header,
 .evidence-code-body,
 .evidence-json-body {
-    background: #1e1e2e;
-    color: #d4d4e0;
+    background: var(--night);
+    color: var(--night-text);
     font-family: var(--bs-font-monospace);
 }
 
 .evidence-log-viewer {
-    border-radius: 6px;
+    border-radius: var(--radius);
     padding: 0.75rem;
     font-size: 0.8rem;
 }
@@ -158,7 +348,7 @@
 }
 
 .evidence-log-timestamp {
-    color: #8890a6;
+    color: var(--night-muted);
     margin-right: 0.5rem;
 }
 
@@ -170,15 +360,15 @@
 }
 
 .evidence-log-level-error .evidence-log-level-tag {
-    color: #ff6b6b;
+    color: var(--night-danger);
 }
 
 .evidence-log-level-warn .evidence-log-level-tag {
-    color: #f0b429;
+    color: var(--night-warning);
 }
 
 .evidence-log-level-info .evidence-log-level-tag {
-    color: #8890a6;
+    color: var(--night-muted);
 }
 
 .evidence-code-header {
@@ -186,13 +376,13 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 0.75rem;
-    border-radius: 6px 6px 0 0;
+    border-radius: var(--radius) var(--radius) 0 0;
     font-size: 0.8rem;
 }
 
 .evidence-code-body {
     padding: 0.75rem;
-    border-radius: 0 0 6px 6px;
+    border-radius: 0 0 var(--radius) var(--radius);
     font-size: 0.8rem;
     overflow: auto;
     max-height: 60vh;
@@ -204,13 +394,13 @@
 }
 
 .evidence-code-line-highlight {
-    background: rgba(255, 214, 79, 0.15);
-    border-left: 2px solid #ffd64f;
+    background: var(--night-highlight-wash);
+    border-left: 2px solid var(--night-highlight);
 }
 
 .evidence-json-body {
     padding: 0.75rem;
-    border-radius: 6px;
+    border-radius: var(--radius);
     font-size: 0.78rem;
     overflow: auto;
     max-height: 40vh;
@@ -218,7 +408,7 @@
 
 .evidence-screenshot-frame {
     background: $gray-100;
-    border-radius: 6px;
+    border-radius: var(--radius);
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -262,7 +452,7 @@
 
 .hint-row {
     padding: 0.3rem 0.5rem;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
 
     & + .hint-row {
         margin-top: 0.15rem;
@@ -278,7 +468,7 @@
     background: none;
     border: none;
     padding: 0.1rem 0;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     font-size: 0.85rem;
     color: $gray-600;
     cursor: pointer;
@@ -294,7 +484,8 @@
 }
 
 .hint-lock-icon {
-    font-size: 0.8rem;
+    display: inline-flex;
+    color: $gray-500;
 }
 
 .hint-row-header {
@@ -305,8 +496,8 @@
 }
 
 .hint-check {
+    display: inline-flex;
     color: $success;
-    font-weight: 700;
 }
 
 .hint-penalty-chip {
@@ -322,34 +513,103 @@
     padding-left: 1.6rem;
 }
 
-// Engineering Discussion panel (Version 2, Phase 18). Reuses the same
-// dark palette the evidence log/code viewers established above (docs/13
-// §11.1: "the workspace's existing dark-panel visual language"), not a
-// new chat-bubble design language.
+// Engineering Discussion panel (Version 2, Phase 18; Design System v1
+// alignment, Milestone 5). Reuses the same dark palette the evidence
+// log/code viewers established above — an internal engineering review
+// tool's instrument panel, not a new chat-bubble design language. The
+// panel is a single scrolling region (Bootstrap's `.modal-dialog-scrollable`,
+// applied in the markup) with a fixed header and footer, so the transcript
+// scrolls independently without a nested second scrollbar.
 .discussion-panel {
-    background: #1e1e2e;
-    color: #d4d4e0;
+    background: var(--night);
+    color: var(--night-text);
+    max-height: 85vh;
+
+    .modal-header,
+    .modal-footer {
+        border-color: var(--night-border);
+    }
+
+    .modal-body {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+    }
+}
+
+// Header (refined for breathing room after first review pass): generous
+// padding, a guaranteed minimum gap between the info group and the action
+// group regardless of title length, and top-alignment so a long title
+// wrapping to two lines doesn't drag the actions down with it.
+.discussion-header {
+    align-items: flex-start;
+    padding: 1.25rem 1.5rem;
+    gap: 1.5rem;
+}
+
+.discussion-header-info {
+    min-width: 0;
+}
+
+.discussion-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    flex-shrink: 0;
+    padding-top: 0.1rem;
+}
+
+// Persona + round count read as their own information row, clearly
+// separated from the title above rather than a tight caption.
+.discussion-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.65rem;
+}
+
+.discussion-persona-badge {
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--night-muted);
+    background: var(--night-raised);
+    border: 1px solid var(--night-border);
+    border-radius: var(--radius-sm);
+    padding: 0.15rem 0.5rem;
+
+    &:empty {
+        display: none;
+    }
 }
 
 .discussion-round-counter {
-    color: #8890a6;
+    color: var(--night-muted);
+    font-size: 0.8rem;
+
+    &:empty {
+        display: none;
+    }
 }
 
 .discussion-error {
-    color: #ff6b6b;
+    color: var(--night-danger);
 }
 
+// Static and calm on purpose — no bouncing dots, no spinner. A senior
+// engineer reading your reply doesn't perform "typing," they just reply
+// when they're done reading.
 .discussion-thinking {
-    color: #8890a6;
+    color: var(--night-muted);
 }
 
 .discussion-transcript {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    max-height: 50vh;
-    overflow-y: auto;
-    margin-bottom: 0.5rem;
+    gap: 0.75rem;
+    flex: 1 1 auto;
+    min-height: 3rem;
 }
 
 .discussion-turn {
@@ -365,33 +625,55 @@
 }
 
 .discussion-turn-bubble {
-    max-width: 85%;
-    padding: 0.5rem 0.75rem;
-    border-radius: 6px;
-    font-size: 0.85rem;
+    max-width: 80%;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    line-height: 1.5;
     white-space: pre-wrap;
     word-break: break-word;
 }
 
 .discussion-turn-student .discussion-turn-bubble {
-    background: #33354a;
+    background: var(--night-raised-alt);
 }
 
 .discussion-turn-ai .discussion-turn-bubble {
-    background: #2a2d3f;
-    border-left: 2px solid #8890a6;
+    background: var(--night-raised);
+    border-left: 2px solid var(--night-muted);
+}
+
+// Footer: input area (or, in place of it, the accepted banner / unavailable
+// retry / thinking line once the discussion has moved past active
+// back-and-forth). Bootstrap's own .modal-footer defaults to a right-aligned
+// button row; overridden here to stack its children full-width instead,
+// since every child here is a form/banner, not a loose button group.
+.discussion-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
 }
 
 .discussion-input {
-    background: #14141f;
-    color: #d4d4e0;
-    border-color: #33354a;
+    background: var(--night-deep);
+    color: var(--night-text);
+    border-color: var(--night-raised-alt);
 
     &:focus {
-        background: #14141f;
-        color: #d4d4e0;
-        border-color: #8890a6;
+        background: var(--night-deep);
+        color: var(--night-text);
+        border-color: var(--night-muted);
         box-shadow: none;
+    }
+
+    // Milestone 7 accessibility audit: the standard Signal-blue focus ring
+    // (from .form-control:focus-visible above) measures only 2.66:1 against
+    // this dark input's background — below the 3:1 WCAG floor for a UI
+    // component's focus indicator. A lighter Signal tint restores it to
+    // 5.86:1 here without changing the ring on any light-background input.
+    &:focus-visible {
+        outline-color: #6e8cf5;
     }
 }
 
@@ -399,11 +681,10 @@
 // success tint against the dark panel, not a bright alert box — it's a
 // next-step nudge, not a warning.
 .discussion-outcome-banner {
-    background: #1f3a2e;
-    border: 1px solid #3a6a52;
-    border-radius: 6px;
+    background: var(--night-success-bg);
+    border: 1px solid var(--night-success-border);
+    border-radius: var(--radius);
     padding: 0.75rem;
-    margin-bottom: 0.5rem;
     font-size: 0.85rem;
 }
 
@@ -413,11 +694,10 @@
 // design, this should read as "the AI reviewer isn't in today," not
 // "something's broken."
 .discussion-unavailable {
-    background: #23273a;
-    border: 1px solid #3a3f55;
-    border-radius: 6px;
+    background: var(--night-neutral-bg);
+    border: 1px solid var(--night-neutral-border);
+    border-radius: var(--radius);
     padding: 0.75rem;
-    margin-bottom: 0.5rem;
     font-size: 0.85rem;
-    color: #d4d4e0;
+    color: var(--night-text);
 }

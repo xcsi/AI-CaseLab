@@ -1,5 +1,64 @@
 // Bootstrap variable overrides — set before importing Bootstrap so the whole
 // component library picks up the AI CaseLab palette in one place.
+//
+// Source of truth: the approved "AI CaseLab — Design System v1" spec
+// (see reference_design_system_spec memory / project Artifact). This file
+// carries the Sass-level tokens Bootstrap itself consumes (colors, radius,
+// link style); app.scss carries the plain-CSS custom properties for
+// spacing/shadow/the dark "Night" panel scale that bespoke component CSS
+// reads from.
 
 $primary: #2952e3;
 $font-family-sans-serif: 'Figtree', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+// Slate — a cool, blue-tinted neutral scale (not Bootstrap's default gray)
+// so every neutral in the app reads as chosen, not inherited.
+$gray-100: #eef0f4;
+$gray-200: #e1e4ea;
+$gray-300: #c7ccd6;
+$gray-400: #9aa1b0;
+$gray-500: #6b7284;
+$gray-600: #4b5164;
+$gray-700: #363b4a;
+$gray-800: #23262f;
+$gray-900: #12141c;
+
+// Semantic colors — muted, never neon; paired with an icon/label in the UI,
+// never color alone.
+//
+// Milestone 7 accessibility audit: the originally-specified Amber (#b4740e)
+// measured 3.86:1 against white — both as badge-background-with-white-text
+// and as .text-warning-on-white — below WCAG AA's 4.5:1 for normal text.
+// Darkened to #96600c (5.28:1 against white), same hue family, comfortable
+// margin above the AA floor. Moss (5.02:1) and Ember (4.77:1) already passed
+// and are unchanged.
+$success: #1a7f4b; // Moss
+$warning: #96600c; // Amber (darkened for AA contrast — see note above)
+$danger: #d13b3b;  // Ember
+
+// Radius scale: sm/base already matched Bootstrap's own defaults, restated
+// here so the token is explicit rather than a coincidence. lg is tightened
+// from Bootstrap's 0.5rem to 0.625rem and reserved for modals/popovers only.
+$border-radius-sm: 0.25rem;
+$border-radius: 0.375rem;
+$border-radius-lg: 0.625rem;
+
+// Body links: colored, underlined only on hover — not always-underlined
+// running text. Nav links keep their own bold+underline-when-active style
+// in app.scss, unaffected by this.
+$link-decoration: none;
+$link-hover-decoration: underline;
+
+// Cards (Milestone 3): Bootstrap's own default ($card-border-color) is a
+// translucent black/white overlay, not tied to the Slate scale at all —
+// explicit Slate-200 border per the spec's "1px border, no shadow by
+// default" card style. Radius/background already resolve correctly via
+// $border-radius and Bootstrap's own $card-bg default (body background).
+$card-border-color: $gray-200;
+
+// Modal backdrop (Milestone 5 header-spacing pass): a touch darker than
+// Bootstrap's default 0.5 so a modal — most importantly the Engineering
+// Discussion — reads as the unambiguous visual focus against the page
+// behind it. Applies to every modal in the app for consistency, not just
+// discussion, since it's a shared Bootstrap component.
+$modal-backdrop-opacity: 0.6;
