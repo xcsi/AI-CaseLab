@@ -573,6 +573,22 @@ a.card:hover {
     gap: 0.85rem;
     flex-shrink: 0;
     padding-top: 0.1rem;
+
+    // Bootstrap 5.3 dropped `justify-content: space-between` from
+    // .modal-header, relying instead on .btn-close's own `margin-left:
+    // auto` to self-right-align. Wrapping the close button in this custom
+    // actions group (alongside End Discussion) put it on the wrong element
+    // — the auto margin needs to be on the flex item .modal-header actually
+    // sees, or the whole group sits stranded next to the title instead of
+    // pinned to the header's far edge.
+    margin-left: auto;
+
+    // Un-do the .btn-close's own auto margin now that the group it's
+    // inside carries that job — without this, both margins stack and the
+    // close button gets shoved to the right of its own group's edge.
+    .btn-close {
+        margin-left: 0;
+    }
 }
 
 // Persona + round count read as their own information row, clearly
