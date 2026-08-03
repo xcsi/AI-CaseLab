@@ -424,6 +424,73 @@ the first release is tagged.
   integration points (§11.1–§11.3 — Investigation Workspace, Performance
   Review, Admin Case Editor). Full suite: 482/482 passing. Phase 22
   (Documentation, Deployment Update & Release) is in progress.
+- **AI CaseLab Design System v1 — full visual identity rollout, 7
+  milestones:** a token-driven visual layer (`resources/sass/_variables.scss`,
+  `resources/sass/app.scss`) replacing Bootstrap's stock look app-wide —
+  Signal accent, a blue-tinted Slate neutral scale, a Night dark-panel
+  scale for the Engineering Discussion, semantic Moss/Amber/Ember colors,
+  a tightened radius scale, and hairline-border cards — applied across
+  every student and admin screen with no route/controller/service/AI/
+  database/state-machine changes. Milestone 1: design tokens. Milestone
+  2: buttons and form controls, admin nav "Student Workspace" link.
+  Milestone 3: card and nav chrome, a "Skip to content" link on every
+  authenticated shell. Milestone 4: a shared `<x-empty-state>` component
+  (icon + message + optional action) replacing bespoke empty/loading
+  markup. Milestone 5: the Engineering Discussion panel restructured for
+  layout, spacing, transcript readability, and header hierarchy per
+  designer review (before/after screenshots in `docs/design-review/`).
+  Milestone 6: a single outline-stroke SVG icon system
+  (`<x-icon>`, `resources/views/components/icon.blade.php`) replacing
+  every ad hoc HTML-entity glyph and the hint-lock emoji. Milestone 7: an
+  accessibility and responsive audit — two measured WCAG contrast fixes
+  (Amber 3.86:1 → 5.28:1 against white; the Signal focus ring on dark
+  backgrounds 2.66:1 → 5.86:1), a `:focus-visible` ring extended to four
+  custom interactive elements that previously had none, and a code-level
+  responsive audit across Desktop/Laptop/Tablet/Mobile with no
+  regressions found. A release-candidate QA pass afterward fixed three
+  further issues: an empty persona-badge/round-counter chip that
+  rendered before an Engineering Discussion began, Bootstrap's unstyled
+  default cyan (`bg-info`/`text-bg-info`/`alert-info`) surfacing in the
+  Analytics dashboard, the Evidence Explorer's API-response status badge,
+  and the Review screen — swapped to the existing Signal token — and the
+  admin Case Editor's hint reorder buttons, which still used `&uarr;`/
+  `&darr;` entities missed by Milestone 6. New test coverage:
+  `SkipLinkTest`, `EmptyStateTest`, `IconSystemTest`,
+  `AccessibilityAuditTest`, `AdminNavigationTest`, `BrandingTest`. Full
+  suite: 512/512 passing.
+- Complete engineering documentation library, `docs/00-executive-summary.md`
+  through `docs/39-glossary.md` (40 files, indexed by `docs/README.md`):
+  requirements, full system/backend/frontend/database architecture, the
+  entire AI Discussion Engine subsystem, security, the approved Design
+  System, testing strategy, all 22 development phases and their
+  milestones, design decisions, a problems-and-solutions log, bug
+  history, performance/cost optimizations, deployment/config/developer/
+  maintenance guides, future roadmap, a full engineering retrospective,
+  10 formal Architecture Decision Records, an API reference, folder/
+  class reference, sequence diagrams, data flow diagrams, a security
+  review, an operational runbook, and a glossary — sourced from this
+  changelog and the full git history, then verified (every internal
+  link and anchor resolves, every Mermaid diagram checked for balanced
+  syntax). A separate formal academic report for a university
+  supervisor/graduation committee, `docs/AI-CaseLab-Final-Project-Report.md`,
+  covers background/objectives/scope/architecture/design decisions/
+  chronological development/challenges/testing/results/future work/
+  lessons learned/conclusion/references/appendices; its cover page has
+  placeholder `[Student Name]`/`[Institution Name]`/`[Supervisor Name]`
+  fields to fill in before submission.
+
+### Fixed
+
+- Seeded demo case data: two cases' `ticket_content` had a free-text
+  "Priority:" line inconsistent with the `Priority: {Low/Medium/High}`
+  badge the Incident Briefing page derives from `cases.difficulty`
+  (`incidents/show.blade.php`'s `$priorityLabel`) — "Login Failures
+  After Password Reset" (difficulty `easy`) said "Priority: Medium" in
+  its ticket text instead of "Low", and "API Returning 500 on Checkout"
+  (difficulty `medium`) said "Priority: High" instead of "Medium".
+  Corrected in `database/seeders/DemoDataSeeder.php` so the derived
+  badge and the ticket's own text always agree; no change to the
+  difficulty-to-priority derivation itself.
 
 ### Known issues
 
