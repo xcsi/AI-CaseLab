@@ -4,7 +4,7 @@
     $statusBadge = match (true) {
         $status === null => 'text-bg-secondary',
         $status < 300 => 'text-bg-success',
-        $status < 400 => 'text-bg-info',
+        $status < 400 => 'text-bg-primary',
         $status < 500 => 'text-bg-warning',
         default => 'text-bg-danger',
     };

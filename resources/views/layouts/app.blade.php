@@ -7,6 +7,8 @@
 
         <title>{{ config('app.name', 'AI CaseLab') }}</title>
 
+        <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
@@ -15,6 +17,8 @@
         @vite(['resources/sass/app.scss', 'resources/js/app.js'])
     </head>
     <body>
+        <a href="#main-content" class="visually-hidden-focusable">Skip to content</a>
+
         <div class="min-vh-100 bg-light">
             @include('layouts.navigation')
 
@@ -28,7 +32,7 @@
             @endisset
 
             <!-- Page Content -->
-            <main>
+            <main id="main-content">
                 {{ $slot }}
             </main>
         </div>

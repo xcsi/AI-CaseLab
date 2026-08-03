@@ -18,11 +18,14 @@
 
     <div class="container py-4">
         @unless ($hasAnyActivity)
-            <div class="card shadow-sm">
-                <div class="card-body text-center py-5">
-                    <h3 class="h5 fw-semibold mb-2">Your first incident is waiting</h3>
-                    <p class="text-secondary mb-4">Head over to Assigned Incidents to pick up your first ticket.</p>
-                    <a href="{{ route('cases.index') }}" class="btn btn-primary">Go to Assigned Incidents</a>
+            <div class="card">
+                <div class="card-body">
+                    <x-empty-state
+                        message="Your first incident is waiting — head over to Assigned Incidents to pick up your first ticket."
+                        action-url="{{ route('cases.index') }}"
+                        action-label="Go to Assigned Incidents"
+                        action-class="btn-primary"
+                    />
                 </div>
             </div>
         @else
@@ -30,19 +33,19 @@
 
             @if ($closedCount > 0)
                 <div class="d-flex flex-nowrap overflow-auto gap-3 mb-4 pb-1">
-                    <div class="card shadow-sm flex-shrink-0" style="min-width: 200px;">
+                    <div class="card flex-shrink-0" style="min-width: 200px;">
                         <div class="card-body">
                             <div class="text-secondary small text-uppercase">Incidents Closed</div>
                             <div class="fs-2 fw-semibold">{{ $closedCount }}</div>
                         </div>
                     </div>
-                    <div class="card shadow-sm flex-shrink-0" style="min-width: 200px;">
+                    <div class="card flex-shrink-0" style="min-width: 200px;">
                         <div class="card-body">
                             <div class="text-secondary small text-uppercase">Average Score</div>
                             <div class="fs-2 fw-semibold">{{ $averageScore }}%</div>
                         </div>
                     </div>
-                    <div class="card shadow-sm flex-shrink-0" style="min-width: 200px;">
+                    <div class="card flex-shrink-0" style="min-width: 200px;">
                         <div class="card-body">
                             <div class="text-secondary small text-uppercase">Current Streak</div>
                             <div class="fs-2 fw-semibold">{{ $streak }} {{ Str::plural('day', $streak) }}</div>
@@ -54,7 +57,7 @@
             <div class="row g-3 mb-4">
                 @if ($continuing)
                     <div class="col-lg-8">
-                        <div class="card shadow-sm h-100">
+                        <div class="card h-100">
                             <div class="card-body">
                                 <div class="text-secondary small text-uppercase mb-1">Continue Investigation</div>
                                 <h3 class="h5 fw-semibold mb-1">{{ $continuing->case->title }}</h3>
@@ -66,7 +69,7 @@
                 @endif
 
                 <div class="{{ $continuing ? 'col-lg-4' : 'col-lg-12' }}">
-                    <div class="card shadow-sm h-100">
+                    <div class="card h-100">
                         <div class="card-body">
                             <div class="text-secondary small text-uppercase mb-2">Recent Activity</div>
                             @forelse ($recentActivity as $attempt)
@@ -95,7 +98,7 @@
             </div>
 
             @if ($recommended)
-                <div class="card shadow-sm">
+                <div class="card">
                     <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-2">
                         <div>
                             <div class="text-secondary small text-uppercase mb-1">Recommended Next</div>

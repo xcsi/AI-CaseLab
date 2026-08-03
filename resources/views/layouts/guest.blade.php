@@ -7,6 +7,8 @@
 
         <title>{{ config('app.name', 'AI CaseLab') }}</title>
 
+        <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
@@ -22,7 +24,7 @@
                 </a>
             </div>
 
-            <div class="w-100 mt-4 px-4 py-4 bg-white shadow-sm rounded-3" style="max-width: 28rem;">
+            <div class="w-100 mt-4 px-4 py-4 bg-white border rounded-3" style="max-width: 28rem;">
                 {{ $slot }}
             </div>
         </div>

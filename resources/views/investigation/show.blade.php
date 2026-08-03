@@ -53,13 +53,13 @@
                                 <div class="evidence-explorer-group-label">{{ $groupLabel }}</div>
                                 @foreach ($items as $item)
                                     <button type="button" class="evidence-explorer-item" data-id="{{ $item->id }}">
-                                        <span class="evidence-viewed-check {{ $viewedEvidenceItemIds->contains($item->id) ? '' : 'd-none' }}">&check;</span>
+                                        <span class="evidence-viewed-check {{ $viewedEvidenceItemIds->contains($item->id) ? '' : 'd-none' }}"><x-icon name="check" size="14" /></span>
                                         <span class="evidence-explorer-item-title">{{ $item->title }}</span>
                                     </button>
                                 @endforeach
                             </div>
                         @empty
-                            <p class="text-secondary small mt-3 mb-0">No other evidence has been added to this incident yet.</p>
+                            <x-empty-state compact message="No other evidence has been added to this incident yet." />
                         @endforelse
 
                         @if ($orderedHints->isNotEmpty())
@@ -71,7 +71,7 @@
                                     <div class="hint-row {{ $unlock ? 'hint-row-unlocked' : '' }}" data-hint-id="{{ $hint->id }}">
                                         @if ($unlock)
                                             <div class="hint-row-header">
-                                                <span class="hint-check">&check;</span>
+                                                <span class="hint-check"><x-icon name="check" size="14" /></span>
                                                 <span class="hint-label">Hint {{ $loop->iteration }}</span>
                                                 <span class="badge text-bg-light hint-penalty-chip">&minus;{{ $formatPenalty($unlock->penalty_applied) }} pts</span>
                                             </div>
@@ -84,7 +84,7 @@
                                                 data-penalty="{{ $hint->score_penalty }}"
                                                 data-label="Hint {{ $loop->iteration }}"
                                             >
-                                                <span class="hint-lock-icon" aria-hidden="true">&#128274;</span>
+                                                <span class="hint-lock-icon"><x-icon name="lock" size="14" /></span>
                                                 <span class="hint-label">Hint {{ $loop->iteration }}</span>
                                                 <span class="badge text-bg-light hint-penalty-chip ms-auto">&minus;{{ $formatPenalty($hint->score_penalty) }} pts</span>
                                             </button>
@@ -208,14 +208,17 @@
          stays byte-for-byte what it was before Version 2 existed. --}}
     @if ($case->discussion_enabled)
     <div class="modal fade" id="discussion-panel-modal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
             <div class="modal-content discussion-panel">
-                <div class="modal-header border-0">
-                    <div>
+                <div class="modal-header discussion-header">
+                    <div class="discussion-header-info">
                         <h5 class="modal-title mb-0">Engineering Discussion</h5>
-                        <span class="small discussion-round-counter" id="discussion-round-counter"></span>
+                        <div class="discussion-meta">
+                            <span class="discussion-persona-badge" id="discussion-persona-badge"></span>
+                            <span class="discussion-round-counter" id="discussion-round-counter"></span>
+                        </div>
                     </div>
-                    <div class="d-flex align-items-center gap-2">
+                    <div class="discussion-header-actions">
                         {{-- Always available while the discussion is active
                              (§11.1) — hidden once the session is no longer
                              active, since there's nothing left to end. --}}
@@ -223,7 +226,7 @@
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                 </div>
-                <div class="modal-body pt-0">
+                <div class="modal-body">
                     <p class="small discussion-error d-none" id="discussion-error"></p>
 
                     {{-- "AI Discussion Unavailable" state (§11.5, Milestone
@@ -244,7 +247,8 @@
                     </div>
 
                     <div class="discussion-transcript" id="discussion-transcript"></div>
-
+                </div>
+                <div class="modal-footer discussion-footer">
                     {{-- Accept -> diagnosis-prefill transition moment (§11.1,
                          Milestone 3) — a deliberate call to action, not a
                          silent redirect, so the student understands the
@@ -256,19 +260,19 @@
                         <a href="{{ route('investigation.diagnosis.create', $attempt) }}" class="btn btn-success btn-sm">Continue to Diagnosis</a>
                     </div>
 
-                    <p class="small discussion-thinking d-none" id="discussion-thinking">AI is thinking&hellip;</p>
+                    <p class="small discussion-thinking d-none mb-0" id="discussion-thinking">Reviewing your reasoning&hellip;</p>
 
                     <form id="discussion-open-form" class="d-none">
                         <label for="discussion-open-input" class="form-label small">
                             State your position &mdash; what's your read on this incident so far?
                         </label>
                         <textarea id="discussion-open-input" class="form-control discussion-input" rows="3" maxlength="5000" required></textarea>
-                        <button type="submit" class="btn btn-primary btn-sm mt-2" id="discussion-open-submit">Begin Discussion</button>
+                        <button type="submit" class="btn btn-primary mt-2" id="discussion-open-submit">Begin Discussion</button>
                     </form>
 
-                    <form id="discussion-reply-form" class="d-none d-flex gap-2 mt-2">
+                    <form id="discussion-reply-form" class="d-none d-flex gap-2">
                         <textarea id="discussion-reply-input" class="form-control discussion-input flex-grow-1" rows="2" maxlength="5000" placeholder="Respond&hellip;" required></textarea>
-                        <button type="submit" class="btn btn-primary btn-sm align-self-end" id="discussion-reply-submit">Send</button>
+                        <button type="submit" class="btn btn-primary align-self-end" id="discussion-reply-submit">Send</button>
                     </form>
                 </div>
             </div>
@@ -387,7 +391,7 @@
                     closeButton.type = 'button';
                     closeButton.className = 'evidence-tab-close';
                     closeButton.setAttribute('aria-label', 'Close tab');
-                    closeButton.innerHTML = '&times;';
+                    closeButton.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
 
                     tab.append(selectButton, closeButton);
                     document.getElementById('evidence-tab-bar').appendChild(tab);
@@ -589,7 +593,7 @@
                         row.classList.add('hint-row-unlocked');
                         row.innerHTML = `
                             <div class="hint-row-header">
-                                <span class="hint-check">&check;</span>
+                                <span class="hint-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></span>
                                 <span class="hint-label"></span>
                                 <span class="badge text-bg-light hint-penalty-chip">&minus;${formatPenaltyDisplay(data.penalty_applied)} pts</span>
                             </div>
@@ -652,7 +656,20 @@
                 const discussionMessagesUrl = `/investigation/${attemptId}/discussion/messages`;
                 const discussionEndUrl = `/investigation/${attemptId}/discussion/end`;
 
+                // Display-only label for the persona already returned in
+                // every session payload (session.persona) — purely a
+                // frontend presentation choice, no new backend field.
+                // Falls back to a capitalized version of the raw key so a
+                // persona added later still renders something reasonable
+                // without requiring a JS change.
+                const discussionPersonaLabels = { mentor: 'Mentor Review', interviewer: 'Interviewer Review' };
+                function discussionPersonaLabel(persona) {
+                    if (discussionPersonaLabels[persona]) return discussionPersonaLabels[persona];
+                    return persona.charAt(0).toUpperCase() + persona.slice(1);
+                }
+
                 const discussionModalEl = document.getElementById('discussion-panel-modal');
+                const discussionPersonaBadge = document.getElementById('discussion-persona-badge');
                 const discussionRoundCounter = document.getElementById('discussion-round-counter');
                 const discussionTranscript = document.getElementById('discussion-transcript');
                 const discussionThinking = document.getElementById('discussion-thinking');
@@ -689,6 +706,7 @@
 
                 function applyDiscussionSession(data) {
                     hideDiscussionUnavailable();
+                    discussionPersonaBadge.textContent = discussionPersonaLabel(data.session.persona);
                     discussionRoundCounter.textContent = `Round ${data.session.round_count} of ${data.session.max_rounds}`;
                     renderDiscussionTurns(data.turns);
 

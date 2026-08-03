@@ -72,16 +72,19 @@
         </form>
 
         @if (! $anyPublishedCases)
-            <div class="card shadow-sm">
-                <div class="card-body text-center text-secondary py-5">
-                    <p class="mb-0">New incidents are being triaged &mdash; check back soon.</p>
+            <div class="card">
+                <div class="card-body">
+                    <x-empty-state message="New incidents are being triaged — check back soon." />
                 </div>
             </div>
         @elseif ($cases->isEmpty())
-            <div class="card shadow-sm">
-                <div class="card-body text-center text-secondary py-5">
-                    <p class="mb-3">No incidents match these filters.</p>
-                    <a href="{{ route('cases.index') }}" class="btn btn-outline-secondary btn-sm">Clear Filters</a>
+            <div class="card">
+                <div class="card-body">
+                    <x-empty-state
+                        message="No incidents match these filters."
+                        action-url="{{ route('cases.index') }}"
+                        action-label="Clear Filters"
+                    />
                 </div>
             </div>
         @else
@@ -91,7 +94,7 @@
                         $latestAttempt = $isAuthed ? $case->attempts->first() : null;
                     @endphp
                     <div class="col">
-                        <a href="{{ route('cases.show', $case) }}" class="card shadow-sm h-100 text-decoration-none text-body">
+                        <a href="{{ route('cases.show', $case) }}" class="card h-100 text-decoration-none text-body">
                             <div class="card-body d-flex flex-column">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
                                     <span class="badge text-bg-light border">{{ $case->category->name }}</span>
@@ -106,7 +109,7 @@
 
                                     @if ($latestAttempt && $latestAttempt->status === App\Enums\AttemptStatus::Completed)
                                         @php $percent = $latestAttempt->max_possible_score > 0 ? round($latestAttempt->score_earned / $latestAttempt->max_possible_score * 100) : 0; @endphp
-                                        &middot; <span class="badge {{ $scoreBadge($percent) }}">{{ $percent }}% &#10003;</span>
+                                        &middot; <span class="badge {{ $scoreBadge($percent) }}">{{ $percent }}% <x-icon name="check" size="11" /></span>
                                     @elseif ($latestAttempt && $latestAttempt->status === App\Enums\AttemptStatus::InProgress)
                                         &middot; <span class="badge text-bg-primary">In Progress</span>
                                     @elseif ($isAuthed)

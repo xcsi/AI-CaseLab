@@ -11,20 +11,20 @@
 
     $criterionState = function ($result) {
         if ($result->isPendingManualReview()) {
-            return ['icon' => '&hellip;', 'class' => 'text-secondary', 'pending' => true];
+            return ['icon' => 'clock', 'class' => 'text-secondary', 'pending' => true];
         }
 
         $score = $result->effectiveScore();
 
         if ($result->max_score > 0 && $score >= $result->max_score) {
-            return ['icon' => '&check;', 'class' => 'text-success'];
+            return ['icon' => 'check', 'class' => 'text-success'];
         }
 
         if ($score <= 0) {
-            return ['icon' => '&#10007;', 'class' => 'text-danger'];
+            return ['icon' => 'x', 'class' => 'text-danger'];
         }
 
-        return ['icon' => '&#9680;', 'class' => 'text-warning'];
+        return ['icon' => 'dot', 'class' => 'text-warning'];
     };
 
     $pendingManualReviewCount = $evaluation?->metadata['pending_manual_review_count'] ?? 0;
@@ -58,7 +58,7 @@
     <div class="container py-4 pb-5">
         <div class="row g-4">
             <div class="col-lg-8">
-                <div class="card shadow-sm mb-4">
+                <div class="card mb-4">
                     <div class="card-body">
                         @if ($hasEvaluation)
                             <div class="d-flex flex-wrap align-items-baseline gap-3">
@@ -101,7 +101,7 @@
                 </div>
 
                 @if ($hasEvaluation && $evaluation->criterionResults->isNotEmpty())
-                    <div class="card shadow-sm mb-4">
+                    <div class="card mb-4">
                         <div class="card-header fw-semibold">Per-Criterion Breakdown</div>
                         <div class="card-body">
                             @foreach ($evaluation->criterionResults as $result)
@@ -109,7 +109,7 @@
                                 <div class="py-2 {{ ! $loop->last ? 'border-bottom' : '' }}">
                                     <div class="d-flex justify-content-between align-items-start gap-3">
                                         <div class="d-flex gap-2">
-                                            <span class="{{ $state['class'] }}" aria-hidden="true">{!! $state['icon'] !!}</span>
+                                            <x-icon :name="$state['icon']" :class="$state['class']" />
                                             <span>{{ $result->rubricCriterion->title }}</span>
                                         </div>
                                         <span class="text-secondary text-nowrap">
@@ -147,7 +147,7 @@
                      full transcript, and most students checking their
                      score aren't here to re-read it. --}}
                 @if ($discussionSession)
-                    <div class="card shadow-sm mb-4">
+                    <div class="card mb-4">
                         <div class="card-header">
                             <button
                                 type="button"
@@ -158,7 +158,7 @@
                                 aria-controls="discussion-review-collapse"
                             >
                                 <span>Engineering Discussion</span>
-                                <span class="text-secondary small" aria-hidden="true">&#9662;</span>
+                                <x-icon name="chevron-down" size="14" class="text-secondary" />
                             </button>
                         </div>
                         <div class="collapse" id="discussion-review-collapse">
@@ -187,7 +187,7 @@
                     </div>
                 @endif
 
-                <div class="card shadow-sm mb-4">
+                <div class="card mb-4">
                     <div class="card-header fw-semibold">What Actually Happened</div>
                     <div class="card-body">
                         @if ($case->model_solution_summary)

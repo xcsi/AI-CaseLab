@@ -24,6 +24,8 @@
 
         <title>Submit Diagnosis — {{ config('app.name', 'AI CaseLab') }}</title>
 
+        <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
@@ -194,6 +196,7 @@
                 // so a double-click or a slow response can't double-post.
                 form.addEventListener('submit', () => {
                     confirmSubmit.disabled = true;
+                    confirmSubmit.classList.add('btn-loading');
                     confirmSubmit.textContent = 'Submitting…';
                     document.querySelectorAll('.diagnosis-submit-trigger').forEach((button) => {
                         button.disabled = true;
