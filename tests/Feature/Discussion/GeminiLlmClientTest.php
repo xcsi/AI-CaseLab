@@ -128,6 +128,30 @@ class GeminiLlmClientTest extends TestCase
         $this->assertSame('gemini', $result->provider);
     }
 
+    public function test_a_malformed_json_reply_never_leaks_raw_json_to_the_student(): void
+    {
+        // Release blocker regression: a model that attempted the JSON
+        // contract but produced something json_decode can't parse used to
+        // fall through to the raw content verbatim — exposing
+        // reply_text/verdict/internal_note field names and JSON syntax
+        // directly in the chat bubble. Every parse failure must resolve to
+        // the same safe placeholder, never the raw content.
+        Http::fake([
+            'generativelanguage.googleapis.com/*' => Http::response([
+                'candidates' => [
+                    ['content' => ['role' => 'model', 'parts' => [['text' => '{"reply_text": "What in the evidence points to that specif']]]],
+                ],
+            ], 200),
+        ]);
+
+        $result = $this->client()->complete(new SystemPrompt('system'), [], 'hello');
+
+        $this->assertSame("The AI's reply couldn't be read this round.", $result->replyText);
+        $this->assertStringNotContainsString('reply_text', $result->replyText);
+        $this->assertStringNotContainsString('{', $result->replyText);
+        $this->assertSame(DiscussionVerdict::Continue, $result->verdict);
+    }
+
     private function client(): GeminiLlmClient
     {
         return new GeminiLlmClient(

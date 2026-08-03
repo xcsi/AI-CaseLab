@@ -162,7 +162,10 @@ class OpenAiCompatibleLlmClientTest extends TestCase
         // Proves the real StructuredOutputParser + TurnClassifier
         // integration end to end (Phase 14 Milestone 6 catch-up), not just
         // in isolation: a model that ignores the JSON contract entirely
-        // must degrade this one turn, not crash the request.
+        // must degrade this one turn, not crash the request — and the raw
+        // reply must never reach replyText (release blocker: a model that
+        // wrote plain prose instead of JSON must not leak that prose to the
+        // student wrapped in only a placeholder-shaped assumption).
         Http::fake([
             'https://openrouter.ai/api/v1/chat/completions' => Http::response([
                 'choices' => [
@@ -173,10 +176,61 @@ class OpenAiCompatibleLlmClientTest extends TestCase
 
         $result = $this->openRouterClient()->complete(new SystemPrompt('system'), [], 'hello');
 
-        $this->assertSame('Sure! I think the gateway timeout is the issue here.', $result->replyText);
+        $this->assertSame("The AI's reply couldn't be read this round.", $result->replyText);
+        $this->assertStringNotContainsString('gateway timeout', $result->replyText);
         $this->assertSame(DiscussionVerdict::Continue, $result->verdict);
         $this->assertSame('structured parse failed, verdict defaulted', $result->internalNote);
         $this->assertSame('openrouter', $result->provider);
+    }
+
+    public function test_a_malformed_json_reply_never_leaks_raw_json_to_the_student(): void
+    {
+        // Release blocker regression: a model that attempted the JSON
+        // contract but produced something json_decode can't parse (here,
+        // truncated mid-string) used to fall through to $rawContent
+        // verbatim — exposing reply_text/verdict/internal_note field names
+        // and JSON syntax directly in the chat bubble. Every parse failure
+        // must resolve to the same safe placeholder, never the raw content.
+        $malformedJson = '{"reply_text": "What in the evidence points to that specif';
+
+        Http::fake([
+            'https://openrouter.ai/api/v1/chat/completions' => Http::response([
+                'choices' => [
+                    ['message' => ['content' => $malformedJson]],
+                ],
+            ], 200),
+        ]);
+
+        $result = $this->openRouterClient()->complete(new SystemPrompt('system'), [], 'hello');
+
+        $this->assertSame("The AI's reply couldn't be read this round.", $result->replyText);
+        $this->assertStringNotContainsString('reply_text', $result->replyText);
+        $this->assertStringNotContainsString('{', $result->replyText);
+        $this->assertSame(DiscussionVerdict::Continue, $result->verdict);
+        $this->assertSame('structured parse failed, verdict defaulted', $result->internalNote);
+    }
+
+    public function test_a_valid_json_reply_missing_a_required_field_never_leaks_raw_json(): void
+    {
+        // A model can produce syntactically valid JSON that's still missing
+        // a field StructuredOutputParser requires (e.g. verdict) — a
+        // different failure mode than truncated JSON, but the same leak
+        // path, so it needs its own case.
+        $validJsonMissingVerdict = json_encode(['reply_text' => 'What led you to that conclusion?']);
+
+        Http::fake([
+            'https://openrouter.ai/api/v1/chat/completions' => Http::response([
+                'choices' => [
+                    ['message' => ['content' => $validJsonMissingVerdict]],
+                ],
+            ], 200),
+        ]);
+
+        $result = $this->openRouterClient()->complete(new SystemPrompt('system'), [], 'hello');
+
+        $this->assertSame("The AI's reply couldn't be read this round.", $result->replyText);
+        $this->assertStringNotContainsString('What led you to that conclusion?', $result->replyText);
+        $this->assertSame(DiscussionVerdict::Continue, $result->verdict);
     }
 
     public function test_a_truly_empty_reply_falls_back_to_a_placeholder_message_instead_of_a_blank_bubble(): void

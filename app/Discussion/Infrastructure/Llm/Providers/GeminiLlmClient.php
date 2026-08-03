@@ -24,16 +24,17 @@ use Illuminate\Support\Facades\Http;
 class GeminiLlmClient implements LlmClientInterface
 {
     /**
-     * Some providers/models can return a genuinely empty content string
-     * rather than malformed JSON (docs/15 §2.2 — a "reasoning" model
-     * burning its whole max_tokens budget before ever writing content,
-     * observed in real use). Falling back to that raw (empty) string left
-     * the student staring at a blank reply bubble with no signal anything
-     * went wrong. This placeholder only replaces a truly empty
-     * (post-trim) raw reply — verdict, internal_note, and every other
-     * part of the existing degrade-gracefully fallback are unchanged.
+     * $rawContent is the model's entire unparsed response — never safe to
+     * show a student verbatim once StructuredOutputParser has rejected it,
+     * whether that's a genuinely empty string (docs/15 §2.2 — a "reasoning"
+     * model burning its whole max_tokens budget before ever writing content,
+     * observed in real use) or a malformed/incomplete JSON attempt that
+     * still contains reply_text/verdict/internal_note field names and
+     * syntax. Every parse failure gets this same placeholder; verdict,
+     * internal_note, and every other part of the existing
+     * degrade-gracefully fallback are unchanged.
      */
-    private const EMPTY_REPLY_PLACEHOLDER = "The AI's reply couldn't be read this round.";
+    private const UNPARSEABLE_REPLY_PLACEHOLDER = "The AI's reply couldn't be read this round.";
 
     public function __construct(
         private readonly string $apiKey,
@@ -106,7 +107,7 @@ class GeminiLlmClient implements LlmClientInterface
             $parsed = $this->structuredOutputParser->parse($rawContent);
         } catch (StructuredOutputParseException) {
             return new LlmTurnResult(
-                replyText: trim($rawContent) === '' ? self::EMPTY_REPLY_PLACEHOLDER : $rawContent,
+                replyText: self::UNPARSEABLE_REPLY_PLACEHOLDER,
                 verdict: DiscussionVerdict::Continue,
                 internalNote: 'structured parse failed, verdict defaulted',
                 provider: 'gemini',
