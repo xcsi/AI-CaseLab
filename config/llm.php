@@ -20,9 +20,20 @@ return [
     | engineer challenging you in a review sends two sharp sentences and a
     | question, not an essay. Also a direct cost control (§12).
     |
+    | This budget has to cover more than just the visible reply on a
+    | "reasoning" model (docs/15 §2.2 flagged this as a risk for the
+    | OpenRouter tier's free model): those models spend part of max_tokens
+    | on an internal `reasoning` field before ever writing to `content`.
+    | Reproduced live 2026-08-03 at the old default (300): OpenRouter's
+    | nvidia/nemotron-nano-9b-v2:free hit finish_reason "length" with
+    | content null and ~379 reasoning tokens already spent -- the model
+    | never got to write an answer at all, so every turn fell back to the
+    | "couldn't be read" placeholder even though nothing was malformed.
+    | 1000 leaves real headroom for a full reasoning pass plus the short
+    | reply itself, on a still-free tier.
     */
 
-    'max_tokens' => (int) env('LLM_MAX_TOKENS', 300),
+    'max_tokens' => (int) env('LLM_MAX_TOKENS', 1000),
 
     /*
     |--------------------------------------------------------------------------
