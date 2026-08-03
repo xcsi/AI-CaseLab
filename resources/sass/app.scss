@@ -189,6 +189,22 @@ a.card:hover {
     }
 }
 
+// Assigned Incidents filtering (progressive enhancement over the plain GET
+// form): a brief, subtle dim while a fetch is in flight — deliberately not a
+// spinner overlay, since the swap itself is usually faster than one would be
+// noticeable.
+.incident-results-loading {
+    opacity: 0.6;
+    transition: opacity 0.15s ease;
+    pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .incident-results-loading {
+        transition: none;
+    }
+}
+
 // Bootstrap's utilities API ships min-vw-100/min-vh-100 but no generic
 // min-width/min-height utilities (that's a Tailwind convention, not
 // Bootstrap's) — the workspace flex layout depends on min-w-0/min-h-0 to let

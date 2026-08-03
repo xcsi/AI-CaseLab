@@ -1,7 +1,4 @@
 @php
-    $difficultyBadge = fn ($difficulty) => \App\Support\Badge::difficulty($difficulty);
-    $scoreBadge = fn (float $percent) => \App\Support\Badge::score($percent);
-
     $selectedDifficulties = collect(request('difficulty', []));
     $isAuthed = auth()->check();
 @endphp
@@ -25,7 +22,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
                 </div>
                 <div class="offcanvas-body d-md-flex align-items-center flex-wrap gap-3 bg-white border rounded-3 p-3 mb-4">
-                    <select name="category" class="form-select form-select-sm" style="max-width: 180px;" onchange="this.form.submit()">
+                    <select name="category" class="form-select form-select-sm" style="max-width: 180px;">
                         <option value="">All Categories</option>
                         @foreach ($categories as $category)
                             <option value="{{ $category->id }}" @selected(request('category') == $category->id)>{{ $category->name }}</option>
@@ -36,7 +33,7 @@
                         @foreach (App\Enums\CaseDifficulty::cases() as $difficulty)
                             <input type="checkbox" class="btn-check" name="difficulty[]" value="{{ $difficulty->value }}"
                                 id="difficulty-{{ $difficulty->value }}" autocomplete="off"
-                                @checked($selectedDifficulties->contains($difficulty->value)) onchange="this.form.submit()">
+                                @checked($selectedDifficulties->contains($difficulty->value))>
                             <label class="btn btn-sm btn-outline-secondary" for="difficulty-{{ $difficulty->value }}">
                                 {{ ucfirst($difficulty->value) }}
                             </label>
@@ -44,7 +41,7 @@
                     </div>
 
                     @if ($isAuthed)
-                        <select name="status" class="form-select form-select-sm" style="max-width: 170px;" onchange="this.form.submit()">
+                        <select name="status" class="form-select form-select-sm" style="max-width: 170px;">
                             <option value="">All Statuses</option>
                             <option value="not_started" @selected(request('status') === 'not_started')>Not Started</option>
                             <option value="in_progress" @selected(request('status') === 'in_progress')>In Progress</option>
@@ -52,7 +49,7 @@
                         </select>
                     @endif
 
-                    <select name="sort" class="form-select form-select-sm" style="max-width: 170px;" onchange="this.form.submit()">
+                    <select name="sort" class="form-select form-select-sm" style="max-width: 170px;">
                         <option value="newest" @selected(request('sort', 'newest') === 'newest')>Newest</option>
                         <option value="oldest" @selected(request('sort') === 'oldest')>Oldest</option>
                         <option value="difficulty" @selected(request('sort') === 'difficulty')>Difficulty</option>
@@ -65,73 +62,136 @@
                     </div>
 
                     @if (request()->anyFilled(['category', 'difficulty', 'status', 'search']) || request('sort', 'newest') !== 'newest')
-                        <a href="{{ route('cases.index') }}" class="btn btn-sm btn-link text-decoration-none">Clear Filters</a>
+                        <a href="{{ route('cases.index') }}" class="btn btn-sm btn-link text-decoration-none" data-incident-filter-link>Clear Filters</a>
                     @endif
                 </div>
             </div>
         </form>
 
-        @if (! $anyPublishedCases)
-            <div class="card">
-                <div class="card-body">
-                    <x-empty-state message="New incidents are being triaged — check back soon." />
-                </div>
-            </div>
-        @elseif ($cases->isEmpty())
-            <div class="card">
-                <div class="card-body">
-                    <x-empty-state
-                        message="No incidents match these filters."
-                        action-url="{{ route('cases.index') }}"
-                        action-label="Clear Filters"
-                    />
-                </div>
-            </div>
-        @else
-            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-4">
-                @foreach ($cases as $case)
-                    @php
-                        $latestAttempt = $isAuthed ? $case->attempts->first() : null;
-                    @endphp
-                    <div class="col">
-                        <a href="{{ route('cases.show', $case) }}" class="card h-100 text-decoration-none text-body">
-                            <div class="card-body d-flex flex-column">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <span class="badge text-bg-light border">{{ $case->category->name }}</span>
-                                    <span class="badge {{ $difficultyBadge($case->difficulty) }}">{{ ucfirst($case->difficulty->value) }}</span>
-                                </div>
-                                <h3 class="h6 fw-semibold mb-1">{{ $case->title }}</h3>
-                                @if ($case->summary)
-                                    <p class="text-secondary small mb-2">{{ Str::limit($case->summary, 90) }}</p>
-                                @endif
-                                <div class="text-secondary small mt-auto pt-2">
-                                    {{ $case->estimated_minutes }} min
+        <div id="incident-status" class="visually-hidden" role="status" aria-live="polite"></div>
 
-                                    @if ($latestAttempt && $latestAttempt->status === App\Enums\AttemptStatus::Completed)
-                                        @php $percent = $latestAttempt->max_possible_score > 0 ? round($latestAttempt->score_earned / $latestAttempt->max_possible_score * 100) : 0; @endphp
-                                        &middot; <span class="badge {{ $scoreBadge($percent) }}">{{ $percent }}% <x-icon name="check" size="11" /></span>
-                                    @elseif ($latestAttempt && $latestAttempt->status === App\Enums\AttemptStatus::InProgress)
-                                        &middot; <span class="badge text-bg-primary">In Progress</span>
-                                    @elseif ($isAuthed)
-                                        &middot; <span class="text-secondary">Not started</span>
-                                    @endif
-                                </div>
-                            </div>
-                        </a>
-                    </div>
-                @endforeach
-            </div>
-
-            {{ $cases->links('pagination::bootstrap-5') }}
-        @endif
+        <div id="incident-results">
+            @include('incidents._results')
+        </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('incident-filters-form');
+            const resultsEl = document.getElementById('incident-results');
+            const statusEl = document.getElementById('incident-status');
+            const searchInput = document.getElementById('incident-search');
             let searchTimeout;
-            document.getElementById('incident-search').addEventListener('input', function () {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => this.form.submit(), 450);
+            let activeRequest = null;
+
+            function syncFormFromUrl(url) {
+                const params = new URL(url, window.location.origin).searchParams;
+
+                if (form.elements.category) {
+                    form.elements.category.value = params.get('category') || '';
+                }
+                if (form.elements.status) {
+                    form.elements.status.value = params.get('status') || '';
+                }
+                if (form.elements.sort) {
+                    form.elements.sort.value = params.get('sort') || 'newest';
+                }
+                if (searchInput) {
+                    searchInput.value = params.get('search') || '';
+                }
+
+                const selectedDifficulties = params.getAll('difficulty[]');
+                form.querySelectorAll('input[name="difficulty[]"]').forEach((checkbox) => {
+                    checkbox.checked = selectedDifficulties.includes(checkbox.value);
+                });
+            }
+
+            function fetchResults(url, { pushState = true } = {}) {
+                if (activeRequest) {
+                    activeRequest.abort();
+                }
+                const controller = new AbortController();
+                activeRequest = controller;
+
+                resultsEl.setAttribute('aria-busy', 'true');
+                resultsEl.classList.add('incident-results-loading');
+
+                fetch(url, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    signal: controller.signal,
+                })
+                    .then((response) => {
+                        if (!response.ok) {
+                            throw new Error('Request failed');
+                        }
+                        return response.text();
+                    })
+                    .then((html) => {
+                        resultsEl.innerHTML = html;
+
+                        const statusText = resultsEl.querySelector('[data-incident-status]');
+                        if (statusText) {
+                            statusEl.textContent = statusText.textContent.trim();
+                        }
+
+                        if (pushState) {
+                            window.history.pushState({}, '', url);
+                        }
+                        syncFormFromUrl(url);
+                    })
+                    .catch((error) => {
+                        if (error.name === 'AbortError') {
+                            return;
+                        }
+                        // Fall back to a real navigation if the fetch itself failed
+                        // (network error, JS disabled path never reaches here).
+                        window.location.href = url;
+                    })
+                    .finally(() => {
+                        if (activeRequest === controller) {
+                            resultsEl.removeAttribute('aria-busy');
+                            resultsEl.classList.remove('incident-results-loading');
+                            activeRequest = null;
+                        }
+                    });
+            }
+
+            function currentFormUrl() {
+                const params = new URLSearchParams(new FormData(form));
+                const query = params.toString();
+                return form.action + (query ? '?' + query : '');
+            }
+
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+                fetchResults(currentFormUrl());
+            });
+
+            form.addEventListener('change', (event) => {
+                if (event.target === searchInput) {
+                    return;
+                }
+                fetchResults(currentFormUrl());
+            });
+
+            if (searchInput) {
+                searchInput.addEventListener('input', function () {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => fetchResults(currentFormUrl()), 450);
+                });
+            }
+
+            document.addEventListener('click', (event) => {
+                const link = event.target.closest('.pagination .page-link, [data-incident-filter-link]');
+                if (!link || !link.href) {
+                    return;
+                }
+                event.preventDefault();
+                fetchResults(link.href);
+            });
+
+            window.addEventListener('popstate', () => {
+                fetchResults(window.location.href, { pushState: false });
             });
         });
     </script>
