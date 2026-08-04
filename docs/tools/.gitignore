@@ -1,0 +1,6 @@
+node_modules/
+package-lock.json
+*.html
+main.pdf
+fig4-1.pdf
+fig8-1.pdf

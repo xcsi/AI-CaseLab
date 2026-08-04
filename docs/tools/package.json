@@ -1,0 +1,13 @@
+{
+  "name": "aicaselab-report-pdf-tools",
+  "private": true,
+  "type": "module",
+  "description": "Build tooling for docs/AI-CaseLab-Final-Project-Report.pdf. Not part of the application.",
+  "scripts": {
+    "build": "node build-report-pdf.mjs && python merge-report-pdf.py"
+  },
+  "dependencies": {
+    "marked": "^18.0.0",
+    "playwright": "^1.48.0"
+  }
+}
