@@ -1,24 +1,29 @@
-// AI CaseLab report MD -> HTML -> PDF build script.
+// AI CaseLab report MD -> HTML -> PDF build script. Generalized to build any
+// Markdown report in this shape (not just the original academic report).
 //
 // Setup (one-time, in this directory):
 //   npm init -y && npm install marked playwright
 // Usage:
-//   node build-report-pdf.mjs        (writes intermediate files here, then merge-report-pdf.py splices them)
-//   python merge-report-pdf.py       (requires: pip install pymupdf)
+//   node build-report-pdf.mjs [--src=path/to/report.md] [--out=path/to/report.pdf] [--title="PDF title"]
+//   python merge-report-pdf.py --src=<same md path>   (only needed if the report has landscape/tall figures — see below)
 //
-// Renders docs/AI-CaseLab-Final-Project-Report.md to
-// docs/AI-CaseLab-Final-Project-Report.pdf using headless Microsoft Edge
-// (via Playwright's `channel: 'msedge'`, which drives the system-installed
-// Edge without downloading a separate Chromium build) and Mermaid v10 loaded
-// from the jsDelivr CDN for diagram rendering.
+// Defaults to the original academic report's paths if --src/--out are omitted.
 //
-// Two figures (4.1 "High-Level System Architecture" and 8.1 "Empty-Reply
-// Investigation Decision Tree") are wide/tall enough that they read poorly at
-// portrait body-text width, so they're extracted from the main flow and
-// rendered as their own dedicated pages (4.1 landscape, 8.1 a full-height
-// portrait page), then spliced back into the merged PDF at the same spot by
-// merge-report-pdf.py. Add more entries to TARGETS in extractLandscapeFigures
-// if a future diagram needs the same treatment.
+// Renders the source Markdown to PDF using headless Microsoft Edge (via
+// Playwright's `channel: 'msedge'`, which drives the system-installed Edge
+// without downloading a separate Chromium build) and Mermaid v10 loaded from
+// the jsDelivr CDN for diagram rendering. Local images referenced with a
+// relative path in the Markdown (e.g. `![x](screenshots/foo.jpg)`) are
+// resolved to absolute file:// URIs against the source .md's own directory,
+// so `page.setContent()` (which has no base URL) can still load them.
+//
+// Some reports have a figure wide/tall enough that it reads poorly at normal
+// portrait body-text width — e.g. the academic report's Figure 4.1 and 8.1.
+// Those are extracted from the main flow and rendered as their own dedicated
+// pages (landscape or full-height portrait), written alongside main.pdf as
+// fig-N.pdf files for merge-report-pdf.py to splice back in. A report with no
+// such figures (the common case) skips all of this automatically: main.pdf
+// *is* the final PDF, written directly to --out, no merge step needed.
 import { marked } from 'marked';
 import { chromium } from 'playwright';
 import fs from 'node:fs';
@@ -27,7 +32,24 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = process.env.AICASELAB_ROOT || path.resolve(__dirname, '../..');
-const MD_PATH = path.join(PROJECT_ROOT, 'docs/AI-CaseLab-Final-Project-Report.md');
+
+const argMap = Object.fromEntries(
+  process.argv.slice(2)
+    .filter((a) => a.startsWith('--'))
+    .map((a) => {
+      const [k, ...v] = a.slice(2).split('=');
+      return [k, v.join('=') || true];
+    })
+);
+
+const MD_PATH = argMap.src
+  ? path.resolve(PROJECT_ROOT, argMap.src)
+  : path.join(PROJECT_ROOT, 'docs/AI-CaseLab-Final-Project-Report.md');
+const OUT_PDF = argMap.out
+  ? path.resolve(PROJECT_ROOT, argMap.out)
+  : MD_PATH.replace(/\.md$/, '.pdf');
+const PDF_TITLE = argMap.title || 'AI CaseLab Report';
+const MD_DIR = path.dirname(MD_PATH);
 const WORK_DIR = __dirname;
 
 const MERMAID_CDN = 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.mjs';
@@ -135,6 +157,26 @@ h1.pagebreak:first-child { break-before: avoid; page-break-before: avoid; }
   margin: 0 auto;
 }
 
+figure.screenshot {
+  margin: 6px 0 18px 0;
+  break-inside: avoid;
+  text-align: center;
+}
+figure.screenshot img {
+  max-width: 100%;
+  border: 1px solid #d7dce3;
+  border-radius: 6px;
+  display: block;
+  margin: 0 auto;
+}
+figure.screenshot figcaption {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 9.5pt;
+  color: #5a6072;
+  margin-top: 7px;
+  font-style: normal;
+}
+
 .landscape-placeholder { break-before: page; break-after: page; font-size: 6pt; color: #fff; }
 
 .landscape-figure-page { width: 100%; }
@@ -167,25 +209,134 @@ h1.pagebreak:first-child { break-before: avoid; page-break-before: avoid; }
   display: block;
   margin: 0 auto;
 }
+
+/* --- Phase 3 additions: callouts, stat cards, icon badges, compact cards ---
+   Single accent (#2952e3 Signal) + Slate neutrals + Night dark panel only,
+   per the approved Design System -- no second accent color introduced. */
+.ico { width: 18px; height: 18px; vertical-align: -3px; margin-right: 7px; color: #2952e3; flex-shrink: 0; }
+
+.callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #eef1fc;
+  border-left: 4px solid #2952e3;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin: 4px 0 16px 0;
+  break-inside: avoid;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10pt;
+  color: #2a2d38;
+}
+.callout .ico { width: 20px; height: 20px; margin-top: 1px; }
+.callout strong { color: #1a2a6e; }
+.callout-label {
+  display: block;
+  font-size: 8.5pt;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #2952e3;
+  margin-bottom: 3px;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 6px 0 18px 0;
+}
+.stat-card {
+  border: 1px solid #d7dce3;
+  border-radius: 10px;
+  background: #fbfcfe;
+  padding: 16px 10px;
+  text-align: center;
+  break-inside: avoid;
+}
+.stat-card .ico { width: 26px; height: 26px; margin: 0 auto 8px auto; display: block; color: #2952e3; }
+.stat-card .stat-number {
+  display: block;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 700;
+  font-size: 22pt;
+  color: #14161c;
+  line-height: 1.1;
+}
+.stat-card .stat-label {
+  display: block;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 8.7pt;
+  color: #5a6072;
+  margin-top: 5px;
+  line-height: 1.35;
+}
+
+.card-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin: 6px 0 16px 0; }
+.info-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  border: 1px solid #d7dce3;
+  border-radius: 8px;
+  background: #fbfcfe;
+  padding: 11px 14px;
+  break-inside: avoid;
+}
+.info-card .ico-badge {
+  flex-shrink: 0;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: #2952e3;
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 700;
+  font-size: 12pt;
+}
+.info-card .info-card-body { font-family: Arial, Helvetica, sans-serif; font-size: 9.8pt; color: #2a2d38; line-height: 1.45; }
+.info-card .info-card-title { font-weight: 700; color: #14161c; display: block; margin-bottom: 2px; }
+
+table.table-compare th:not(:first-child), table.table-compare td:not(:first-child) { text-align: center; }
+table.table-compare .yes { color: #2952e3; font-weight: 700; }
+
+/* --- Final-phase additions: table of contents, closing pages --- */
+.toc-list { font-family: Arial, Helvetica, sans-serif; font-size: 10.5pt; column-count: 2; column-gap: 28px; }
+.toc-list ol { list-style: none; padding-left: 0; counter-reset: toc; }
+.toc-list li { break-inside: avoid; margin-bottom: 7px; color: #2a2d38; }
+.toc-list li::marker { color: #2952e3; }
+.toc-list ul { margin-top: 4px; margin-bottom: 4px; padding-left: 18px; }
+.toc-list ul li { font-size: 9.3pt; color: #5a6072; margin-bottom: 3px; }
+
+.closing-page { text-align: center; padding-top: 40px; }
+.closing-page .ico { width: 30px; height: 30px; color: #2952e3; margin: 0 auto 14px auto; display: block; }
+.closing-page p { text-align: center; max-width: 480px; margin-left: auto; margin-right: auto; }
 `;
 
 function readMd() {
   return fs.readFileSync(MD_PATH, 'utf8');
 }
 
-// --- Extract the two oversized diagrams so they can be rendered on their own
-// dedicated landscape pages instead of being squeezed into portrait width. ---
+// --- Extract any oversized diagrams so they can be rendered on their own
+// dedicated landscape/tall pages instead of being squeezed into portrait
+// width. Non-throwing: a report whose captions don't match any target (i.e.
+// nearly every report other than the original academic one) simply yields no
+// extractions, and main() writes main.pdf straight to --out with no merge
+// step. Add entries to `targets` if a future report needs the same treatment
+// for a specific figure. ---
 function extractLandscapeFigures(md) {
   const targets = [
     { key: 'fig4-1', captionRe: /\*\*Figure 4\.1 — High-Level System Architecture\*\*/ },
     { key: 'fig8-1', captionRe: /\*\*Figure 8\.1 — Empty-Reply Investigation Decision Tree\*\*/ },
   ];
   const extracted = {};
+  let remaining = md;
   for (const t of targets) {
-    const capMatch = md.match(t.captionRe);
-    if (!capMatch) throw new Error(`Could not find caption for ${t.key}`);
+    const capMatch = remaining.match(t.captionRe);
+    if (!capMatch) continue;
     const start = capMatch.index;
-    const rest = md.slice(start);
+    const rest = remaining.slice(start);
     const fenceMatch = rest.match(/```mermaid\n([\s\S]*?)```/);
     if (!fenceMatch) throw new Error(`Could not find mermaid fence for ${t.key}`);
     const wholeChunk = rest.slice(0, fenceMatch.index + fenceMatch[0].length);
@@ -193,9 +344,9 @@ function extractLandscapeFigures(md) {
       caption: capMatch[0].replace(/\*\*/g, ''),
       mermaid: fenceMatch[1].trim(),
     };
-    md = md.slice(0, start) + `<div class="landscape-placeholder">LANDSCAPE_PLACEHOLDER_${t.key.toUpperCase()}</div>\n` + md.slice(start + wholeChunk.length);
+    remaining = remaining.slice(0, start) + `<div class="landscape-placeholder">LANDSCAPE_PLACEHOLDER_${t.key.toUpperCase()}</div>\n` + remaining.slice(start + wholeChunk.length);
   }
-  return { md, extracted };
+  return { md: remaining, extracted };
 }
 
 // Turn "<!-- pagebreak -->\n\n<heading>" into "<heading class=pagebreak>" as the
@@ -213,6 +364,10 @@ function mermaidHtml(source) {
   return `<div class="mermaid-figure"><pre class="mermaid">${escaped}</pre></div>`;
 }
 
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function renderer() {
   const r = new marked.Renderer();
   const origCode = r.code.bind(r);
@@ -225,6 +380,26 @@ function renderer() {
       return mermaidHtml(text);
     }
     return origCode(token);
+  };
+  // Local, relative image paths (screenshots) are resolved against the
+  // source .md's own directory and inlined as base64 data URIs.
+  // page.setContent() has no base URL, and Chromium's page.setContent()
+  // origin isn't granted local-file-read permission even for absolute
+  // file:// paths -- inlining sidesteps that restriction entirely. Wrapped
+  // as <figure> so the alt text renders as a real caption.
+  const MIME = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml', '.webp': 'image/webp' };
+  r.image = (token) => {
+    const href = typeof token === 'object' ? token.href : token;
+    const alt = (typeof token === 'object' ? token.text : '') || '';
+    let resolvedSrc = href;
+    if (!/^(https?:|data:)/i.test(href)) {
+      const abs = path.resolve(MD_DIR, href);
+      const mime = MIME[path.extname(abs).toLowerCase()] || 'application/octet-stream';
+      const b64 = fs.readFileSync(abs).toString('base64');
+      resolvedSrc = `data:${mime};base64,${b64}`;
+    }
+    const captionHtml = alt ? `<figcaption>${escapeHtml(alt)}</figcaption>` : '';
+    return `<figure class="screenshot"><img src="${resolvedSrc}" alt="${escapeHtml(alt)}">${captionHtml}</figure>`;
   };
   return r;
 }
@@ -259,6 +434,7 @@ async function printPdf(browser, html, outPath, opts) {
 async function main() {
   let md = readMd();
   const { md: mdNoLandscape, extracted } = extractLandscapeFigures(md);
+  const hasLandscapeFigures = Object.keys(extracted).length > 0;
 
   // ---- main portrait document ----
   marked.use({ renderer: renderer() });
@@ -267,30 +443,58 @@ async function main() {
   // first block is the cover <div align="center">...</div> -> tag it .cover
   mainHtml = mainHtml.replace('<div align="center">', '<div align="center" class="cover">');
 
-  const mainPage = buildPage({ bodyHtml: mainHtml, title: 'AI CaseLab Report' });
+  // Optional, this-build-only cap on mermaid diagram height (e.g.
+  // --mermaid-max-height=140mm), scoped via extraCss rather than editing
+  // SHARED_CSS's max-height:225mm, so the original academic report's
+  // already-tuned figure pagination is never affected by this flag.
+  const mermaidCss = argMap['mermaid-max-height']
+    ? `.mermaid-figure svg { max-height: ${argMap['mermaid-max-height']} !important; }`
+    : '';
+  const mainPage = buildPage({ bodyHtml: mainHtml, extraCss: mermaidCss, title: PDF_TITLE });
   fs.writeFileSync(path.join(WORK_DIR, 'main.html'), mainPage);
 
+  const browser = await chromium.launch({ channel: 'msedge', headless: true });
+
+  if (!hasLandscapeFigures) {
+    // Common case: no oversized figures needing special treatment -> main.pdf
+    // *is* the final document, written straight to --out. No merge step.
+    fs.mkdirSync(path.dirname(OUT_PDF), { recursive: true });
+    const footerOpts = argMap.footer ? {
+      displayHeaderFooter: true,
+      headerTemplate: '<div></div>',
+      footerTemplate: `<div style="width:100%;font-family:Arial,Helvetica,sans-serif;font-size:8px;color:#8a8f9c;text-align:center;padding-top:4px;">AI CaseLab — Executive Report &nbsp;·&nbsp; Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>`,
+      margin: { top: '25mm', bottom: '18mm', left: '22mm', right: '22mm' },
+    } : {};
+    await printPdf(browser, mainPage, OUT_PDF, footerOpts);
+    await browser.close();
+    console.log('Rendered', OUT_PDF, '- no merge step needed.');
+    return;
+  }
+
+  await printPdf(browser, mainPage, path.join(WORK_DIR, 'main.pdf'), {});
+
   // ---- fig4-1: wide diagram -> its own landscape page, scaled to full width ----
-  const fig41 = extracted['fig4-1'];
-  const fig41Body = `<div class="landscape-figure-page"><h2 class="fig-caption">${fig41.caption}</h2>${mermaidHtml(fig41.mermaid)}</div>`;
-  const fig41Css = `@page { size: A4 landscape; margin: 15mm 15mm; }`;
-  const fig41Page = buildPage({ bodyHtml: fig41Body, extraCss: fig41Css, title: 'Figure 4.1' });
-  fs.writeFileSync(path.join(WORK_DIR, 'fig4-1.html'), fig41Page);
+  if (extracted['fig4-1']) {
+    const fig41 = extracted['fig4-1'];
+    const fig41Body = `<div class="landscape-figure-page"><h2 class="fig-caption">${fig41.caption}</h2>${mermaidHtml(fig41.mermaid)}</div>`;
+    const fig41Css = `@page { size: A4 landscape; margin: 15mm 15mm; }`;
+    const fig41Page = buildPage({ bodyHtml: fig41Body, extraCss: fig41Css, title: 'Figure 4.1' });
+    fs.writeFileSync(path.join(WORK_DIR, 'fig4-1.html'), fig41Page);
+    await printPdf(browser, fig41Page, path.join(WORK_DIR, 'fig4-1.pdf'), { landscape: true });
+  }
 
   // ---- fig8-1: tall/narrow decision tree -> its own portrait page, scaled to full height ----
-  const fig81 = extracted['fig8-1'];
-  const fig81Body = `<div class="tall-figure-page"><h2 class="fig-caption">${fig81.caption}</h2>${mermaidHtml(fig81.mermaid)}</div>`;
-  const fig81Css = `@page { size: A4; margin: 15mm 18mm; }`;
-  const fig81Page = buildPage({ bodyHtml: fig81Body, extraCss: fig81Css, title: 'Figure 8.1' });
-  fs.writeFileSync(path.join(WORK_DIR, 'fig8-1.html'), fig81Page);
+  if (extracted['fig8-1']) {
+    const fig81 = extracted['fig8-1'];
+    const fig81Body = `<div class="tall-figure-page"><h2 class="fig-caption">${fig81.caption}</h2>${mermaidHtml(fig81.mermaid)}</div>`;
+    const fig81Css = `@page { size: A4; margin: 15mm 18mm; }`;
+    const fig81Page = buildPage({ bodyHtml: fig81Body, extraCss: fig81Css, title: 'Figure 8.1' });
+    fs.writeFileSync(path.join(WORK_DIR, 'fig8-1.html'), fig81Page);
+    await printPdf(browser, fig81Page, path.join(WORK_DIR, 'fig8-1.pdf'), {});
+  }
 
-  const browser = await chromium.launch({ channel: 'msedge', headless: true });
-  await printPdf(browser, mainPage, path.join(WORK_DIR, 'main.pdf'), {});
-  await printPdf(browser, fig41Page, path.join(WORK_DIR, 'fig4-1.pdf'), { landscape: true });
-  await printPdf(browser, fig81Page, path.join(WORK_DIR, 'fig8-1.pdf'), {});
   await browser.close();
-
-  console.log('Rendered main.pdf, fig4-1.pdf, fig8-1.pdf in', WORK_DIR, '- run merge-report-pdf.py next.');
+  console.log('Rendered main.pdf + figure pages in', WORK_DIR, '- run merge-report-pdf.py next.');
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
